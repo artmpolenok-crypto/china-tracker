@@ -2,10 +2,15 @@ import Anthropic from '@anthropic-ai/sdk';
 
 const client = new Anthropic();
 
-const PROMPT = `Parse this invoice/packing list from a Chinese supplier.
+const PROMPT = `Parse this invoice/packing list from a Chinese supplier and translate all text to Russian.
 Return ONLY valid JSON, no markdown, no preamble:
-{"items":[{"name":"...","qty":0,"unit_price_cny":0,"total_cny":0}],"total_cny":0,"invoice_number":null,"supplier":null}
-All numbers must be numeric. If total_cny is missing, sum the items.`;
+{"items":[{"name":"название на русском","qty":0,"unit_price_cny":0,"total_cny":0}],"total_cny":0,"invoice_number":null,"supplier":null}
+Rules:
+- Translate ALL item names to Russian
+- qty must be the actual quantity number
+- All prices must be numeric
+- If total_cny is missing, sum all items
+- supplier should be the company name as-is`;
 
 function getMimeType(file) {
   if (file.type && file.type !== 'application/octet-stream') return file.type;
