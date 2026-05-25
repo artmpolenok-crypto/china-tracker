@@ -71,16 +71,37 @@ function MetricCard({ label, value, cls, sub }) {
 function DropZone({ onFile, loading }) {
   const [drag, setDrag] = useState(false);
   const ref = useRef();
+
+  function handleDrop(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    setDrag(false);
+    const file = e.dataTransfer.files[0];
+    if (file) onFile(file);
+  }
+
+  function handleDragOver(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    setDrag(true);
+  }
+
+  function handleChange(e) {
+    const file = e.target.files[0];
+    if (file) onFile(file);
+  }
+
   return (
     <div
-      className={`drop-zone${drag ? ' drag' : ''}`}
-      onDragOver={e => { e.preventDefault(); setDrag(true); }}
+      onDragOver={handleDragOver}
+      onDragEnter={handleDragOver}
       onDragLeave={() => setDrag(false)}
-      onDrop={e => { e.preventDefault(); setDrag(false); if (e.dataTransfer.files[0]) onFile(e.dataTransfer.files[0]); }}
+      onDrop={handleDrop}
       onClick={() => !loading && ref.current.click()}
+      style={{ border: `1.5px dashed ${drag ? '#1c1c1a' : '#b4b2a9'}`, borderRadius: 12, padding: '2.5rem 1rem', textAlign: 'center', cursor: loading ? 'default' : 'pointer', background: drag ? '#f1efe8' : 'transparent' }}
     >
       <input ref={ref} type="file" accept=".pdf,.png,.jpg,.jpeg,.xlsx,.xls,.csv"
-        style={{ display: 'none' }} onChange={e => e.target.files[0] && onFile(e.target.files[0])} />
+        style={{ display: 'none' }} onChange={handleChange} />
       <div style={{ fontSize: 32, marginBottom: 8 }}>📄</div>
       {loading
         ? <div className="muted">Распознаём накладную...</div>
@@ -92,7 +113,6 @@ function DropZone({ onFile, loading }) {
     </div>
   );
 }
-
 function NewShipment({ onSave, onCancel }) {
   const [step, setStep] = useState(1);
   const [parsing, setParsing] = useState(false);
