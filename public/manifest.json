@@ -1,0 +1,17 @@
+{
+  "name": "Трекер поставок",
+  "short_name": "Трекер",
+  "description": "Учёт поставок из Китая",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0F4C75",
+  "theme_color": "#0F4C75",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
