@@ -21,9 +21,7 @@ async function parseInvoiceFile(file) {
     let text = '';
     wb.SheetNames.forEach(n => { text += `Sheet: ${n}\n` + XLSX.utils.sheet_to_csv(wb.Sheets[n]) + '\n\n'; });
     fd.append('text', text);
-  } else {
-    fd.append('file', file);
-  }
+  } else { fd.append('file', file); }
   const r = await fetch('/api/parse', { method: 'POST', body: fd });
   const data = await r.json();
   if (data.error) throw new Error(data.error);
@@ -37,10 +35,7 @@ async function compressPhoto(file) {
       const canvas = document.createElement('canvas');
       const max = 500;
       let w = img.width, h = img.height;
-      if (w > max || h > max) {
-        if (w > h) { h = Math.round(h * max / w); w = max; }
-        else { w = Math.round(w * max / h); h = max; }
-      }
+      if (w > max || h > max) { if (w > h) { h = Math.round(h * max / w); w = max; } else { w = Math.round(w * max / h); h = max; } }
       canvas.width = w; canvas.height = h;
       canvas.getContext('2d').drawImage(img, 0, 0, w, h);
       resolve(canvas.toDataURL('image/jpeg', 0.75));
@@ -49,61 +44,23 @@ async function compressPhoto(file) {
   });
 }
 
-const BADGES = {
-  new:     { label: 'Новый',  cls: 'badge-new' },
-  transit: { label: 'В пути', cls: 'badge-transit' },
-  arrived: { label: 'Прибыл', cls: 'badge-arrived' },
-  sold:    { label: 'Продан', cls: 'badge-sold' },
-};
-
-function Badge({ status }) {
-  const b = BADGES[status] || BADGES.new;
-  return <span className={`badge ${b.cls}`}>{b.label}</span>;
-}
-
-function Field({ label, children }) {
-  return <div className="field"><label>{label}</label>{children}</div>;
-}
-
-function Row({ label, value }) {
-  return (
-    <tr>
-      <td className="muted" style={{ width: '50%' }}>{label}</td>
-      <td style={{ textAlign: 'right' }}>{value}</td>
-    </tr>
-  );
-}
-
-function MetricCard({ label, value, cls, sub }) {
-  return (
-    <div className="metric-card">
-      <div className="metric-label">{label}</div>
-      <div className={`metric-value ${cls || ''}`}>{value}</div>
-      {sub && <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 2 }}>{sub}</div>}
-    </div>
-  );
-}
+const BADGES = { new: { label: 'Новый', cls: 'badge-new' }, transit: { label: 'В пути', cls: 'badge-transit' }, arrived: { label: 'Прибыл', cls: 'badge-arrived' }, sold: { label: 'Продан', cls: 'badge-sold' } };
+function Badge({ status }) { const b = BADGES[status] || BADGES.new; return <span className={`badge ${b.cls}`}>{b.label}</span>; }
+function Field({ label, children }) { return <div className="field"><label>{label}</label>{children}</div>; }
+function Row({ label, value }) { return <tr><td className="muted" style={{ width: '50%' }}>{label}</td><td style={{ textAlign: 'right' }}>{value}</td></tr>; }
+function MetricCard({ label, value, cls, sub }) { return <div className="metric-card"><div className="metric-label">{label}</div><div className={`metric-value ${cls || ''}`}>{value}</div>{sub && <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 2 }}>{sub}</div>}</div>; }
 
 function DropZone({ onFile, loading, label }) {
   const [drag, setDrag] = useState(false);
   const ref = useRef();
-  function handleDrop(e) {
-    e.preventDefault(); e.stopPropagation(); setDrag(false);
-    const file = e.dataTransfer.files[0];
-    if (file) onFile(file);
-  }
+  function handleDrop(e) { e.preventDefault(); e.stopPropagation(); setDrag(false); const file = e.dataTransfer.files[0]; if (file) onFile(file); }
   function handleDragOver(e) { e.preventDefault(); e.stopPropagation(); setDrag(true); }
   return (
-    <div onDragOver={handleDragOver} onDragEnter={handleDragOver} onDragLeave={() => setDrag(false)}
-      onDrop={handleDrop} onClick={() => !loading && ref.current.click()}
-      style={{ border: `1.5px dashed ${drag ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.3)'}`, borderRadius: 12, padding: '1.5rem 1rem', textAlign: 'center', cursor: loading ? 'default' : 'pointer', background: drag ? 'rgba(255,255,255,0.08)' : 'transparent' }}
-    >
+    <div onDragOver={handleDragOver} onDragEnter={handleDragOver} onDragLeave={() => setDrag(false)} onDrop={handleDrop} onClick={() => !loading && ref.current.click()}
+      style={{ border: `1.5px dashed ${drag ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.3)'}`, borderRadius: 12, padding: '1.5rem 1rem', textAlign: 'center', cursor: loading ? 'default' : 'pointer', background: drag ? 'rgba(255,255,255,0.08)' : 'transparent' }}>
       <input ref={ref} type="file" accept=".pdf,.png,.jpg,.jpeg,.xlsx,.xls,.csv" style={{ display: 'none' }} onChange={e => e.target.files[0] && onFile(e.target.files[0])} />
       <div style={{ fontSize: 28, marginBottom: 6 }}>📄</div>
-      {loading
-        ? <div className="muted">Распознаём...</div>
-        : <><div style={{ fontWeight: 500, marginBottom: 4 }}>{label || 'Загрузите накладную'}</div><div className="muted" style={{ fontSize: 12 }}>PDF · Фото · Excel</div></>
-      }
+      {loading ? <div className="muted">Распознаём...</div> : <><div style={{ fontWeight: 500, marginBottom: 4 }}>{label || 'Загрузите накладную'}</div><div className="muted" style={{ fontSize: 12 }}>PDF · Фото · Excel</div></>}
     </div>
   );
 }
@@ -125,7 +82,7 @@ function NewShipment({ onSave, onCancel }) {
       const d = await parseInvoiceFile(file);
       setForm(f => ({ ...f, items: d.items || [], total_cny: d.total_cny || '', invoice_number: d.invoice_number || '', supplier: d.supplier || '', name: d.supplier ? `Поставка — ${d.supplier}` : `Поставка ${new Date().toLocaleDateString('ru-RU')}` }));
       setStep(2);
-    } catch { setParseError('Не удалось распознать файл. Введите вручную.'); }
+    } catch { setParseError('Не удалось распознать. Введите вручную.'); }
     setParsing(false);
   }
 
@@ -134,8 +91,7 @@ function NewShipment({ onSave, onCancel }) {
     const totalCNY = +form.total_cny || form.items.reduce((s, i) => s + (i.total_cny || 0), 0);
     const shipment = { id: genId(), createdAt: new Date().toISOString(), status: form.ship_date ? 'transit' : 'new', name: form.name || `Поставка ${new Date().toLocaleDateString('ru-RU')}`, items: form.items, total_cny: totalCNY, invoice_number: form.invoice_number, supplier: form.supplier, cny_rate: +form.cny_rate || 0, paid_rub: +form.paid_rub || 0, ship_date: form.ship_date, eta_date: form.eta_date, extra_paid_rub: 0, delivery_rub: 0, sale_price_rub: 0 };
     await apiFetch('/api/shipments', { method: 'POST', body: JSON.stringify(shipment) });
-    onSave(shipment);
-    setSaving(false);
+    onSave(shipment); setSaving(false);
   }
 
   const totalCNY = +form.total_cny || form.items.reduce((s, i) => s + (i.total_cny || 0), 0);
@@ -155,22 +111,20 @@ function NewShipment({ onSave, onCancel }) {
           </div>
         ))}
       </div>
-
       {step === 1 && (
         <div>
           <DropZone onFile={handleFile} loading={parsing} />
           {parseError && <div className="error-box">{parseError}</div>}
           <div className="mt-1" style={{ textAlign: 'center' }}>
-            <button style={{ border: 'none', background: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', fontSize: 13 }} onClick={() => { set('name', `Поставка ${new Date().toLocaleDateString('ru-RU')}`); setStep(2); }}>Пропустить, ввести вручную →</button>
+            <button style={{ border: 'none', background: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', fontSize: 13 }} onClick={() => { set('name', `Поставка ${new Date().toLocaleDateString('ru-RU')}`); setStep(2); }}>Пропустить →</button>
           </div>
         </div>
       )}
-
       {step === 2 && (
         <div>
           {fileName && <div className="info-box">📎 {fileName} — {form.items.length > 0 ? `${form.items.length} позиций` : 'вручную'}</div>}
           <Field label="Название поставки"><input value={form.name} onChange={e => set('name', e.target.value)} placeholder="Электроника январь" /></Field>
-          <Field label="Итого по накладной, ¥"><input type="number" value={form.total_cny} onChange={e => set('total_cny', e.target.value)} placeholder="0" /></Field>
+          <Field label="Итого, ¥"><input type="number" value={form.total_cny} onChange={e => set('total_cny', e.target.value)} placeholder="0" /></Field>
           <div className="grid-2">
             <Field label="Курс CNY/RUB"><input type="number" value={form.cny_rate} onChange={e => set('cny_rate', e.target.value)} placeholder="13.5" /></Field>
             <Field label="Оплачено, ₽"><input type="number" value={form.paid_rub} onChange={e => set('paid_rub', e.target.value)} placeholder="0" /></Field>
@@ -179,7 +133,6 @@ function NewShipment({ onSave, onCancel }) {
           <div className="row mt-1"><button onClick={() => setStep(1)}>← Назад</button><button className="primary flex-1" onClick={() => setStep(3)}>Далее →</button></div>
         </div>
       )}
-
       {step === 3 && (
         <div>
           <div className="grid-2">
@@ -189,7 +142,6 @@ function NewShipment({ onSave, onCancel }) {
           <div className="row mt-1"><button onClick={() => setStep(2)}>← Назад</button><button className="primary flex-1" onClick={() => setStep(4)}>Далее →</button></div>
         </div>
       )}
-
       {step === 4 && (
         <div>
           <div className="card mb-1">
@@ -210,10 +162,93 @@ function NewShipment({ onSave, onCancel }) {
   );
 }
 
-function ShipmentDetail({ shipment, onUpdate, onDelete, onBack }) {
+// ─── ADD SHIPMENT TO WAREHOUSE ────────────────────────────────────────────────
+
+function AddShipmentToWarehouse({ shipment, onDone, onCancel }) {
+  const initItems = (shipment.items || []).map(item => ({
+    id: genId(),
+    name: item.name || '',
+    qty: item.qty || 0,
+    unit: 'шт',
+    dimensions: '',
+    cost_rub: shipment.cny_rate > 0 && item.unit_price_cny ? Math.round(item.unit_price_cny * shipment.cny_rate) : 0,
+    sell_price: 0,
+    photo: null,
+    min_qty: 5,
+    moves: [{ date: new Date().toISOString(), type: 'in', qty: item.qty || 0, note: `Из поставки: ${shipment.name}` }]
+  }));
+
+  const [items, setItems] = useState(initItems);
+  const [saving, setSaving] = useState(false);
+
+  function updateItem(idx, key, val) {
+    setItems(prev => prev.map((item, i) => i === idx ? { ...item, [key]: val, moves: key === 'qty' ? [{ date: new Date().toISOString(), type: 'in', qty: +val || 0, note: `Из поставки: ${shipment.name}` }] : item.moves } : item));
+  }
+
+  function removeItem(idx) { setItems(prev => prev.filter((_, i) => i !== idx)); }
+
+  async function handleSave() {
+    setSaving(true);
+    const toAdd = items.filter(i => i.name && i.qty > 0);
+    await Promise.all(toAdd.map(item => apiFetch('/api/warehouse', { method: 'POST', body: JSON.stringify({ ...item, createdAt: new Date().toISOString() }) })));
+    onDone(toAdd);
+    setSaving(false);
+  }
+
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: '1rem' }}>
+        <button onClick={onCancel} style={{ padding: '6px 10px' }}>← Назад</button>
+        <div style={{ fontSize: 16, fontWeight: 500 }}>Добавить на склад</div>
+      </div>
+      <div className="muted mb-1" style={{ fontSize: 13 }}>Проверьте данные — фото добавите на складе позже</div>
+
+      {items.map((item, idx) => (
+        <div key={item.id} className="card" style={{ marginBottom: 10 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+            <div style={{ fontWeight: 500, fontSize: 14 }}>Позиция {idx + 1}</div>
+            <button onClick={() => removeItem(idx)} style={{ fontSize: 12, color: '#fca5a5', border: 'none', background: 'none', cursor: 'pointer' }}>✕ Убрать</button>
+          </div>
+          <Field label="Название">
+            <input value={item.name} onChange={e => updateItem(idx, 'name', e.target.value)} placeholder="Название товара" />
+          </Field>
+          <div className="grid-2">
+            <Field label="Количество">
+              <input type="number" value={item.qty} onChange={e => updateItem(idx, 'qty', +e.target.value)} placeholder="0" />
+            </Field>
+            <Field label="Единица">
+              <select value={item.unit} onChange={e => updateItem(idx, 'unit', e.target.value)}>
+                <option>шт</option><option>кг</option><option>м</option><option>л</option><option>упак</option><option>пара</option>
+              </select>
+            </Field>
+          </div>
+          <div className="grid-2">
+            <Field label="Размеры">
+              <input value={item.dimensions} onChange={e => updateItem(idx, 'dimensions', e.target.value)} placeholder="Д×Ш×В см" />
+            </Field>
+            <Field label="Цена продажи, ₽">
+              <input type="number" value={item.sell_price || ''} onChange={e => updateItem(idx, 'sell_price', +e.target.value)} placeholder="0" />
+            </Field>
+          </div>
+          {item.cost_rub > 0 && <div className="muted" style={{ fontSize: 12 }}>Себестоимость: {fmt(item.cost_rub)} ₽/шт</div>}
+        </div>
+      ))}
+
+      <div className="row mt-1">
+        <button onClick={onCancel}>Отмена</button>
+        <button className="primary flex-1" onClick={handleSave} disabled={saving || items.filter(i => i.name && i.qty > 0).length === 0}>
+          {saving ? 'Сохранение...' : `Добавить ${items.filter(i => i.name && i.qty > 0).length} позиций на склад`}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ShipmentDetail({ shipment, onUpdate, onDelete, onBack, onAddToWarehouse }) {
   const [showArrival, setShowArrival] = useState(false);
   const [showSale, setShowSale] = useState(false);
   const [showItems, setShowItems] = useState(false);
+  const [showAddWarehouse, setShowAddWarehouse] = useState(false);
   const [saving, setSaving] = useState(false);
   const [arrival, setArrival] = useState({ extra_paid_rub: '', delivery_rub: '', arrived_date: new Date().toISOString().slice(0, 10) });
   const [sale, setSale] = useState({ sale_price_rub: '' });
@@ -227,6 +262,10 @@ function ShipmentDetail({ shipment, onUpdate, onDelete, onBack }) {
   async function doArrival() { await save({ ...shipment, status: 'arrived', extra_paid_rub: +arrival.extra_paid_rub || 0, delivery_rub: +arrival.delivery_rub || 0, arrived_date: arrival.arrived_date }); setShowArrival(false); }
   async function doSale() { await save({ ...shipment, status: 'sold', sale_price_rub: +sale.sale_price_rub || 0, sold_date: new Date().toISOString().slice(0, 10) }); setShowSale(false); }
   async function doDelete() { if (!confirm('Удалить поставку?')) return; await apiFetch('/api/shipments', { method: 'DELETE', body: JSON.stringify({ id: shipment.id }) }); onDelete(); }
+
+  if (showAddWarehouse) {
+    return <AddShipmentToWarehouse shipment={shipment} onDone={(added) => { setShowAddWarehouse(false); onAddToWarehouse(added); }} onCancel={() => setShowAddWarehouse(false)} />;
+  }
 
   return (
     <div>
@@ -281,6 +320,11 @@ function ShipmentDetail({ shipment, onUpdate, onDelete, onBack }) {
             <div className="row"><button onClick={() => setShowArrival(false)}>Отмена</button><button className="primary flex-1" onClick={doArrival} disabled={saving}>Сохранить</button></div>
           </div>
         )}
+        {shipment.status === 'arrived' && shipment.items?.length > 0 && (
+          <button onClick={() => setShowAddWarehouse(true)} style={{ width: '100%', justifyContent: 'center', background: 'rgba(134,239,172,0.15)', borderColor: 'rgba(134,239,172,0.4)', color: '#86EFAC' }}>
+            🏪 Добавить товары на склад
+          </button>
+        )}
         {shipment.status === 'arrived' && !showSale && <button className="primary" onClick={() => setShowSale(true)} style={{ width: '100%', justifyContent: 'center' }}>💰 Продажная цена</button>}
         {showSale && (
           <div className="card">
@@ -299,10 +343,24 @@ function ShipmentDetail({ shipment, onUpdate, onDelete, onBack }) {
 // ─── WAREHOUSE ────────────────────────────────────────────────────────────────
 
 function AddWarehouseItem({ onSave, onCancel }) {
+  const [parsing, setParsing] = useState(false);
+  const [parseError, setParseError] = useState('');
   const [form, setForm] = useState({ name: '', qty: '', unit: 'шт', dimensions: '', sell_price: '', cost_rub: '', photo: null });
   const [saving, setSaving] = useState(false);
   const photoRef = useRef();
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  async function handleInvoice(file) {
+    setParsing(true); setParseError('');
+    try {
+      const d = await parseInvoiceFile(file);
+      if (d.items?.length > 0) {
+        const item = d.items[0];
+        setForm(f => ({ ...f, name: item.name || '', qty: String(item.qty || ''), cost_rub: '' }));
+      }
+    } catch { setParseError('Не удалось распознать файл'); }
+    setParsing(false);
+  }
 
   async function handlePhoto(file) { set('photo', await compressPhoto(file)); }
 
@@ -311,8 +369,7 @@ function AddWarehouseItem({ onSave, onCancel }) {
     setSaving(true);
     const item = { id: genId(), createdAt: new Date().toISOString(), name: form.name, qty: +form.qty, unit: form.unit || 'шт', dimensions: form.dimensions, sell_price: +form.sell_price || 0, cost_rub: +form.cost_rub || 0, photo: form.photo, min_qty: 5, moves: [{ date: new Date().toISOString(), type: 'in', qty: +form.qty, note: 'Начальный остаток' }] };
     await apiFetch('/api/warehouse', { method: 'POST', body: JSON.stringify(item) });
-    onSave(item);
-    setSaving(false);
+    onSave(item); setSaving(false);
   }
 
   return (
@@ -321,6 +378,13 @@ function AddWarehouseItem({ onSave, onCancel }) {
         <button onClick={onCancel} style={{ padding: '6px 10px' }}>← Назад</button>
         <div style={{ fontSize: 18, fontWeight: 500 }}>Новый товар</div>
       </div>
+
+      <div style={{ marginBottom: '1rem' }}>
+        <DropZone onFile={handleInvoice} loading={parsing} label="Загрузить накладную (предзаполнит поля)" />
+        {parseError && <div className="error-box">{parseError}</div>}
+        <div className="muted" style={{ fontSize: 12, textAlign: 'center', marginTop: 6 }}>или заполните вручную ниже</div>
+      </div>
+
       <div style={{ marginBottom: '1rem' }}>
         {form.photo ? (
           <div style={{ position: 'relative' }}>
@@ -328,13 +392,14 @@ function AddWarehouseItem({ onSave, onCancel }) {
             <button onClick={() => set('photo', null)} style={{ position: 'absolute', top: 8, right: 8, padding: '4px 8px', fontSize: 12 }}>✕</button>
           </div>
         ) : (
-          <div onClick={() => photoRef.current.click()} style={{ border: '1.5px dashed rgba(255,255,255,0.3)', borderRadius: 12, padding: '1.5rem', textAlign: 'center', cursor: 'pointer' }}>
-            <div style={{ fontSize: 28, marginBottom: 6 }}>📷</div><div style={{ fontSize: 13 }}>Добавить фото товара</div>
+          <div onClick={() => photoRef.current.click()} style={{ border: '1.5px dashed rgba(255,255,255,0.3)', borderRadius: 12, padding: '1.2rem', textAlign: 'center', cursor: 'pointer' }}>
+            <div style={{ fontSize: 24, marginBottom: 4 }}>📷</div><div style={{ fontSize: 13 }}>Добавить фото товара</div>
           </div>
         )}
         <input ref={photoRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => e.target.files[0] && handlePhoto(e.target.files[0])} />
       </div>
-      <Field label="Название товара *"><input value={form.name} onChange={e => set('name', e.target.value)} placeholder="Кофейная чашка 210мл" /></Field>
+
+      <Field label="Название *"><input value={form.name} onChange={e => set('name', e.target.value)} placeholder="Кофейная чашка 210мл" /></Field>
       <div className="grid-2">
         <Field label="Количество *"><input type="number" value={form.qty} onChange={e => set('qty', e.target.value)} placeholder="0" /></Field>
         <Field label="Единица"><select value={form.unit} onChange={e => set('unit', e.target.value)}><option>шт</option><option>кг</option><option>м</option><option>л</option><option>упак</option><option>пара</option></select></Field>
@@ -429,9 +494,9 @@ function WarehouseItemDetail({ item, onUpdate, onDelete, onBack }) {
 
       <div className="grid-4 mb-1">
         <MetricCard label="На складе" value={`${item.qty} ${item.unit}`} cls={item.qty === 0 ? 'danger' : ''} />
-        <MetricCard label="Себестоимость/шт" value={item.cost_rub ? `${fmt(item.cost_rub)} ₽` : '—'} />
+        <MetricCard label="Себестоим./шт" value={item.cost_rub ? `${fmt(item.cost_rub)} ₽` : '—'} />
         <MetricCard label="Цена продажи" value={item.sell_price ? `${fmt(item.sell_price)} ₽` : '—'} />
-        <MetricCard label="Стоимость остатка" value={item.cost_rub && item.qty ? `${fmt(item.cost_rub * item.qty)} ₽` : '—'} />
+        <MetricCard label="Стоим. остатка" value={item.cost_rub && item.qty ? `${fmt(item.cost_rub * item.qty)} ₽` : '—'} />
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: '1rem' }}>
@@ -441,20 +506,16 @@ function WarehouseItemDetail({ item, onUpdate, onDelete, onBack }) {
             <button onClick={() => setShowReceive(true)} style={{ width: '100%', justifyContent: 'center' }}>📥 Принять на склад</button>
           </>
         )}
-
         {showSale && (
           <div className="card">
-            <div style={{ fontWeight: 500, marginBottom: 10 }}>Списание со склада</div>
+            <div style={{ fontWeight: 500, marginBottom: 10 }}>Списание</div>
             <DropZone onFile={handleSaleInvoice} loading={parsing} label="Загрузить накладную о продаже" />
             <div className="muted" style={{ fontSize: 12, textAlign: 'center', margin: '6px 0 10px' }}>или введите вручную</div>
-            <Field label={`Количество (на складе: ${item.qty} ${item.unit})`}>
-              <input type="number" value={saleQty} onChange={e => setSaleQty(e.target.value)} max={item.qty} placeholder="0" />
-            </Field>
+            <Field label={`Количество (на складе: ${item.qty})`}><input type="number" value={saleQty} onChange={e => setSaleQty(e.target.value)} max={item.qty} placeholder="0" /></Field>
             <Field label="Комментарий"><input value={saleNote} onChange={e => setSaleNote(e.target.value)} placeholder="Продажа" /></Field>
             <div className="row"><button onClick={() => setShowSale(false)}>Отмена</button><button className="primary flex-1" onClick={handleSale} disabled={saving || !saleQty || +saleQty > item.qty || +saleQty <= 0}>Списать</button></div>
           </div>
         )}
-
         {showReceive && (
           <div className="card">
             <div style={{ fontWeight: 500, marginBottom: 12 }}>Приход на склад</div>
@@ -479,7 +540,6 @@ function WarehouseItemDetail({ item, onUpdate, onDelete, onBack }) {
           ))}
         </div>
       )}
-
       <button className="danger" onClick={doDelete} style={{ width: '100%', justifyContent: 'center', marginTop: 4 }}>🗑 Удалить товар</button>
     </div>
   );
@@ -507,15 +567,12 @@ export default function Home() {
 
   if (loading) return <div className="container" style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14, paddingTop: '3rem' }}>Загрузка...</div>;
 
-  // Shipment new/detail
   if (view === 'new-shipment') return <div className="container"><NewShipment onSave={s => { setShipments(p => [...p, s]); setView('list'); }} onCancel={() => setView('list')} /></div>;
   if (view === 'detail-shipment') {
     const s = shipments.find(s => s.id === selected);
     if (!s) { setView('list'); return null; }
-    return <div className="container"><ShipmentDetail shipment={s} onUpdate={updateShipment} onDelete={() => { setShipments(p => p.filter(x => x.id !== selected)); setView('list'); }} onBack={() => setView('list')} /></div>;
+    return <div className="container"><ShipmentDetail shipment={s} onUpdate={updateShipment} onDelete={() => { setShipments(p => p.filter(x => x.id !== selected)); setView('list'); }} onBack={() => setView('list')} onAddToWarehouse={added => { setWarehouse(p => [...p, ...added]); setTab('warehouse'); setView('list'); }} /></div>;
   }
-
-  // Warehouse new/detail
   if (view === 'new-warehouse') return <div className="container"><AddWarehouseItem onSave={i => { setWarehouse(p => [...p, i]); setView('list'); }} onCancel={() => setView('list')} /></div>;
   if (view === 'detail-warehouse') {
     const item = warehouse.find(i => i.id === selected);
@@ -523,19 +580,16 @@ export default function Home() {
     return <div className="container"><WarehouseItemDetail item={item} onUpdate={updateWarehouseItem} onDelete={() => { setWarehouse(p => p.filter(x => x.id !== selected)); setView('list'); }} onBack={() => setView('list')} /></div>;
   }
 
-  // ── List views ──
   const totalProfit = shipments.filter(s => s.status === 'sold').reduce((sum, s) => sum + ((s.sale_price_rub || 0) - (s.paid_rub || 0) - (s.extra_paid_rub || 0) - (s.delivery_rub || 0)), 0);
 
   return (
     <div className="container">
-      {/* Tab nav */}
       <div style={{ display: 'flex', background: 'rgba(255,255,255,0.1)', borderRadius: 10, padding: 3, marginBottom: '1.5rem' }}>
         {[['shipments', '🚢 Поставки'], ['warehouse', '📦 Склад']].map(([key, label]) => (
           <button key={key} onClick={() => setTab(key)} style={{ flex: 1, justifyContent: 'center', border: 'none', borderRadius: 8, background: tab === key ? 'rgba(255,255,255,0.9)' : 'transparent', color: tab === key ? '#0F4C75' : 'rgba(255,255,255,0.8)', fontWeight: tab === key ? 500 : 400, padding: '8px 0' }}>{label}</button>
         ))}
       </div>
 
-      {/* SHIPMENTS TAB */}
       {tab === 'shipments' && (
         <div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
@@ -563,9 +617,7 @@ export default function Home() {
                     <div style={{ fontSize: 24 }}>📦</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontWeight: 500, fontSize: 15, marginBottom: 3 }}>{s.name}</div>
-                      <div className="muted" style={{ fontSize: 12 }}>
-                        {s.total_cny ? `¥ ${fmt(s.total_cny)}` : ''}{s.items?.length ? ` · ${s.items.length} поз.` : ''}{daysLeft !== null ? ` · ${daysLeft > 0 ? `${daysLeft} дн.` : 'сегодня'}` : ''}{s.ship_date && !daysLeft ? ` · ${s.ship_date}` : ''}
-                      </div>
+                      <div className="muted" style={{ fontSize: 12 }}>{s.total_cny ? `¥ ${fmt(s.total_cny)}` : ''}{s.items?.length ? ` · ${s.items.length} поз.` : ''}{daysLeft !== null ? ` · ${daysLeft > 0 ? `${daysLeft} дн.` : 'сегодня'}` : ''}{s.ship_date && !daysLeft ? ` · ${s.ship_date}` : ''}</div>
                     </div>
                     <div style={{ textAlign: 'right', flexShrink: 0 }}>
                       <Badge status={s.status} />
@@ -579,36 +631,30 @@ export default function Home() {
         </div>
       )}
 
-      {/* WAREHOUSE TAB */}
       {tab === 'warehouse' && (
         <div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
             <div><div style={{ fontSize: 20, fontWeight: 500 }}>Склад</div><div className="muted" style={{ fontSize: 13, marginTop: 2 }}>{warehouse.length} позиций</div></div>
             <button className="primary" onClick={() => setView('new-warehouse')}>+ Товар</button>
           </div>
-
           {warehouse.length > 0 && (
             <div className="grid-4" style={{ marginBottom: '1.5rem' }}>
               <MetricCard label="Позиций" value={warehouse.length} />
               <MetricCard label="Единиц всего" value={fmt(warehouse.reduce((s, i) => s + (i.qty || 0), 0))} />
-              <MetricCard label="Мало" value={warehouse.filter(i => (i.qty || 0) <= (i.min_qty || 5) && (i.qty || 0) > 0).length} cls={warehouse.filter(i => (i.qty||0) <= (i.min_qty||5) && (i.qty||0) > 0).length > 0 ? 'danger' : ''} />
-              <MetricCard label="Нет в наличии" value={warehouse.filter(i => (i.qty || 0) === 0).length} cls={warehouse.filter(i => (i.qty||0) === 0).length > 0 ? 'danger' : ''} />
+              <MetricCard label="Мало" value={warehouse.filter(i => (i.qty||0) <= (i.min_qty||5) && (i.qty||0) > 0).length} cls={warehouse.filter(i => (i.qty||0) <= (i.min_qty||5) && (i.qty||0) > 0).length > 0 ? 'danger' : ''} />
+              <MetricCard label="Нет в наличии" value={warehouse.filter(i => (i.qty||0) === 0).length} cls={warehouse.filter(i => (i.qty||0) === 0).length > 0 ? 'danger' : ''} />
             </div>
           )}
-
           {warehouse.length === 0 ? (
-            <div className="empty-state"><div style={{ fontSize: 40, marginBottom: '1rem' }}>🏪</div><div style={{ fontSize: 15, fontWeight: 500, marginBottom: 6 }}>Склад пуст</div><div className="muted" style={{ fontSize: 13 }}>Нажмите «Товар» чтобы добавить</div></div>
+            <div className="empty-state"><div style={{ fontSize: 40, marginBottom: '1rem' }}>🏪</div><div style={{ fontSize: 15, fontWeight: 500, marginBottom: 6 }}>Склад пуст</div><div className="muted" style={{ fontSize: 13 }}>Добавьте товар или импортируйте из поставки</div></div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(155px, 1fr))', gap: 12 }}>
               {warehouse.map(item => {
                 const qtyColor = item.qty === 0 ? '#fca5a5' : item.qty <= (item.min_qty || 5) ? '#FDE68A' : '#86EFAC';
                 return (
                   <div key={item.id} onClick={() => { setSelected(item.id); setView('detail-warehouse'); }}
-                    style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 12, overflow: 'hidden', cursor: 'pointer', transition: 'background 0.15s' }}>
-                    {item.photo
-                      ? <img src={item.photo} alt={item.name} style={{ width: '100%', height: 130, objectFit: 'cover' }} />
-                      : <div style={{ width: '100%', height: 130, background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 36 }}>📦</div>
-                    }
+                    style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 12, overflow: 'hidden', cursor: 'pointer' }}>
+                    {item.photo ? <img src={item.photo} alt={item.name} style={{ width: '100%', height: 130, objectFit: 'cover' }} /> : <div style={{ width: '100%', height: 130, background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 36 }}>📦</div>}
                     <div style={{ padding: '10px 12px' }}>
                       <div style={{ fontWeight: 500, fontSize: 13, marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</div>
                       <div style={{ fontSize: 14, color: qtyColor, fontWeight: 500 }}>{item.qty} {item.unit}</div>
