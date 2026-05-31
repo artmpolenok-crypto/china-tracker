@@ -599,6 +599,62 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
 const [filter, setFilter] = useState('all');
 const [showProfit, setShowProfit] = useState(false);
+const [refreshing, setRefreshing] = useState(false);
+
+async function refreshData() {
+setRefreshing(true);
+try {
+const [s, w] = await Promise.all([
+fetch('/api/shipments').then(r => r.json()).catch(() => []),
+fetch('/api/warehouse').then(r => r.json()).catch(() => []),
+]);
+setShipments(s || []); setWarehouse(w || []);
+} catch(e) {}
+setRefreshing(false);
+}
+
+useEffect(() => {
+let startY = 0;
+let pulling = false;
+let indicator = null;
+
+const onTouchStart = (e) => {
+if (window.scrollY === 0) { startY = e.touches[0].clientY; pulling = true; }
+};
+
+const onTouchMove = (e) => {
+if (!pulling) return;
+const dy = e.touches[0].clientY - startY;
+if (dy > 10 && window.scrollY === 0) {
+if (!indicator) {
+indicator = document.createElement('div');
+indicator.id = 'ptr-indicator';
+indicator.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:12px;background:rgba(0,119,182,0.1);font-size:13px;color:#0077B6;transition:opacity 0.2s;';
+indicator.textContent = '↓ Потяните чтобы обновить';
+document.body.appendChild(indicator);
+}
+if (dy > 70) indicator.textContent = '↑ Отпустите для обновления';
+else indicator.textContent = '↓ Потяните чтобы обновить';
+}
+};
+
+const onTouchEnd = (e) => {
+if (!pulling) return;
+const dy = (e.changedTouches[0]?.clientY || startY) - startY;
+if (indicator) { indicator.remove(); indicator = null; }
+if (dy > 70 && window.scrollY === 0) refreshData();
+pulling = false; startY = 0;
+};
+
+document.addEventListener('touchstart', onTouchStart, { passive: true });
+document.addEventListener('touchmove', onTouchMove, { passive: true });
+document.addEventListener('touchend', onTouchEnd, { passive: true });
+return () => {
+document.removeEventListener('touchstart', onTouchStart);
+document.removeEventListener('touchmove', onTouchMove);
+document.removeEventListener('touchend', onTouchEnd);
+};
+}, []);
 
   useEffect(() => {
     Promise.all([
@@ -630,7 +686,8 @@ const [showProfit, setShowProfit] = useState(false);
 
   return (
     <div className="container">
-      <div style={{ display: 'flex', background: 'rgba(0,119,182,0.08)', borderRadius: 10, padding: 3, marginBottom: '1.5rem' }}>
+      {refreshing && <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999, background: '#0077B6', height: 3, animation: 'none' }}><div style={{ height: '100%', background: '#48CAE4', width: '60%', borderRadius: 2 }} /></div>}
+<div style={{ display: 'flex', background: 'rgba(0,119,182,0.08)', borderRadius: 10, padding: 3, marginBottom: '1.5rem' }}>
         {[['shipments', '🚢 Поставки'], ['warehouse', '📦 Склад']].map(([key, label]) => (
           <button key={key} onClick={() => setTab(key)} style={{ flex: 1, justifyContent: 'center', border: 'none', borderRadius: 8, background: tab === key ? '#fff' : 'transparent', color: tab === key ? '#0077B6' : '#555', fontWeight: tab === key ? 600 : 400, padding: '8px 0', boxShadow: tab === key ? '0 2px 8px rgba(0,119,182,0.12)' : 'none' }}>{label}</button>
         ))}
