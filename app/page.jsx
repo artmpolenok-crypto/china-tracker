@@ -601,7 +601,7 @@ export default function Home() {
     return <div className="container"><WarehouseItemDetail item={item} onUpdate={updateWarehouseItem} onDelete={() => { setWarehouse(p => p.filter(x => x.id !== selected)); setView('list'); }} onBack={() => setView('list')} /></div>;
   }
 
-  const totalProfit = shipments.filter(s => s.status === 'sold').reduce((sum, s) => sum + ((s.sale_price_rub || 0) - (s.paid_rub || 0) - (s.extra_paid_rub || 0) - (s.delivery_rub || 0)), 0);
+  const totalProfit = shipments.filter(s => s.status === 'sold').reduce((sum, s) => sum + ((s.sale_price_rub || 0) - (s.usn_tax || 0) - (s.paid_rub || 0) - (s.extra_paid_rub || 0) - (s.delivery_rub || 0)), 0);
 
   return (
     <div className="container">
@@ -631,14 +631,16 @@ export default function Home() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {[...shipments].reverse().map(s => {
                 const cost = (s.paid_rub || 0) + (s.extra_paid_rub || 0) + (s.delivery_rub || 0);
-                const profit = s.status === 'sold' ? (s.sale_price_rub || 0) - cost : null;
+                const profit = s.status === 'sold' ? (s.sale_price_rub || 0) - (s.usn_tax || 0) - cost : null;
                 const daysLeft = s.eta_date && s.status === 'transit' ? Math.ceil((new Date(s.eta_date) - new Date()) / 86400000) : null;
+            const isOverdue = s.status === 'transit' && daysLeft !== null && daysLeft <= 0;
                 return (
-                  <div key={s.id} className="card shipment-row" onClick={() => { setSelected(s.id); setView('detail-shipment'); }}>
+                  <div key={s.id} className="card shipment-row" onClick={() => { setSelected(s.id); setView('detail-shipment'); }}
+style={isOverdue ? { borderColor: '#f87171', background: '#fff5f5' } : {}}>
                     <div style={{ fontSize: 28 }}>📦</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 3 }}>{s.name}</div>
-                      <div className="muted" style={{ fontSize: 12 }}>{s.total_cny ? `¥ ${fmt(s.total_cny)}` : ''}{s.items?.length ? ` · ${s.items.length} поз.` : ''}{daysLeft !== null ? ` · ${daysLeft > 0 ? `${daysLeft} дн.` : 'сегодня'}` : ''}{s.ship_date && !daysLeft ? ` · ${s.ship_date}` : ''}</div>
+                      <div className="muted" style={{ fontSize: 12 }}>{s.total_cny ? `¥ ${fmt(s.total_cny)}` : ''}{s.items?.length ? ` · ${s.items.length} поз.` : ''}{daysLeft !== null ? (isOverdue ? <span style={{ color: '#d93636', fontWeight: 600 }}> · ⚠️ Просрочено на {Math.abs(daysLeft)} дн.</span> : ` · ${daysLeft} дн. до прибытия`) : ''}{s.ship_date && !daysLeft ? ` · ${s.ship_date}` : ''}</div>
                     </div>
                     <div style={{ textAlign: 'right', flexShrink: 0 }}>
                       <Badge status={s.status} />
