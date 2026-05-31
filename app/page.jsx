@@ -753,7 +753,10 @@ return (
         <div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
             <div><div style={{ fontSize: 22, fontWeight: 700 }}>Поставки</div><div className="muted" style={{ fontSize: 13, marginTop: 2 }}>Китай → Россия</div></div>
-            <button className="primary" onClick={() => setView('new-shipment')}>+ Новая</button>
+            <div style={{ display: 'flex', gap: 8 }}>
+<button onClick={refreshData} style={{ padding: '8px 12px', fontSize: 18, lineHeight: 1 }} title="Обновить">{refreshing ? '⏳' : '↻'}</button>
+<button className="primary" onClick={() => setView('new-shipment')}>+ Новая</button>
+</div>
           </div>
           {shipments.length > 0 && (
             <div className="grid-4" style={{ marginBottom: '1.5rem' }}>
