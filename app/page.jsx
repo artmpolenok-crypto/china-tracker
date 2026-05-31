@@ -161,9 +161,19 @@ function ShipmentDetail({ shipment, onUpdate, onDelete, onBack, onWarehouseUpdat
   const [showArrival, setShowArrival] = useState(false);
   const [showSale, setShowSale] = useState(false);
   const [showItems, setShowItems] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
   const [saving, setSaving] = useState(false);
   const [arrival, setArrival] = useState({ extra_paid_rub: '', delivery_rub: '', arrived_date: new Date().toISOString().slice(0, 10) });
   const [sale, setSale] = useState({ sale_price_rub: '' });
+  const [editShipment, setEditShipment] = useState({ paid_rub: shipment.paid_rub || '', cny_rate: shipment.cny_rate || '', total_cny: shipment.total_cny || '', name: shipment.name || '' });
+  const setES = (k, v) => setEditShipment(f => ({ ...f, [k]: v }));
+
+  async function saveShipmentEdit() {
+    setSaving(true);
+    const updated = { ...shipment, paid_rub: +editShipment.paid_rub || 0, cny_rate: +editShipment.cny_rate || 0, total_cny: +editShipment.total_cny || 0, name: editShipment.name };
+    await apiFetch('/api/shipments', { method: 'PUT', body: JSON.stringify(updated) });
+    onUpdate(updated); setShowEdit(false); setSaving(false);
+  }
 
   const cost = (shipment.paid_rub || 0) + (shipment.extra_paid_rub || 0) + (shipment.delivery_rub || 0);
   const profit = shipment.status === 'sold' ? (shipment.sale_price_rub || 0) - cost : null;
@@ -210,8 +220,31 @@ function ShipmentDetail({ shipment, onUpdate, onDelete, onBack, onWarehouseUpdat
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: '1.5rem' }}>
         <button onClick={onBack} style={{ padding: '6px 10px' }}>← Назад</button>
         <div style={{ flex: 1 }}><div style={{ fontSize: 18, fontWeight: 600 }}>{shipment.name}</div><div className="muted" style={{ fontSize: 12, marginTop: 2 }}>Создан {new Date(shipment.createdAt).toLocaleDateString('ru-RU')}</div></div>
-        <Badge status={shipment.status} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Badge status={shipment.status} />
+          <button onClick={() => setShowEdit(v => !v)} style={{ fontSize: 12, padding: '4px 10px', color: '#0077B6', borderColor: '#cce0f0' }}>{showEdit ? '✕' : '✏️'}</button>
+        </div>
       </div>
+      {showEdit && (
+        <div className="card mb-1" style={{ borderColor: '#0077B6' }}>
+          <div style={{ fontWeight: 600, marginBottom: 12, color: '#0077B6' }}>Редактирование поставки</div>
+          <Field label="Название"><input value={editShipment.name} onChange={e => setES('name', e.target.value)} /></Field>
+          <div className="grid-2">
+            <Field label="Сумма закупки, ¥"><input type="number" value={editShipment.total_cny} onChange={e => setES('total_cny', e.target.value)} placeholder="0" /></Field>
+            <Field label="Курс CNY/RUB"><input type="number" value={editShipment.cny_rate} onChange={e => setES('cny_rate', e.target.value)} placeholder="13.5" /></Field>
+          </div>
+          <Field label="Оплачено в рублях">
+            <input type="number" value={editShipment.paid_rub} onChange={e => setES('paid_rub', e.target.value)}
+              placeholder={editShipment.total_cny && editShipment.cny_rate ? String(Math.round(+editShipment.total_cny * +editShipment.cny_rate)) : '0'}
+              onFocus={e => { if (!editShipment.paid_rub && editShipment.total_cny && editShipment.cny_rate) setES('paid_rub', Math.round(+editShipment.total_cny * +editShipment.cny_rate)); }} />
+          </Field>
+          {editShipment.total_cny && editShipment.cny_rate && <div className="muted mb-1" style={{ fontSize: 13 }}>≈ {Math.round(+editShipment.total_cny * +editShipment.cny_rate).toLocaleString('ru-RU')} ₽</div>}
+          <div className="row">
+            <button onClick={() => setShowEdit(false)}>Отмена</button>
+            <button className="primary flex-1" onClick={saveShipmentEdit} disabled={saving}>Сохранить</button>
+          </div>
+        </div>
+      )}
       <div className="grid-4 mb-1">
         <MetricCard label="Закупка (CNY)" value={shipment.total_cny ? `¥ ${fmt(shipment.total_cny)}` : '—'} />
         <MetricCard label="Оплачено" value={`${fmt(shipment.paid_rub)} ₽`} />
