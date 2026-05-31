@@ -216,7 +216,7 @@ function ShipmentDetail({ shipment, onUpdate, onDelete, onBack, onWarehouseUpdat
 
   async function doSale() {
     const revenue = +sale.sale_price_rub || 0;
-    const tax = sale.usn ? Math.round(revenue * 0.06) : 0;
+    const tax = Math.round(revenue * 0.06);
     await save({ ...shipment, status: 'sold', sale_price_rub: revenue, usn_tax: tax, sold_date: new Date().toISOString().slice(0, 10) });
     setShowSale(false);
   }
@@ -310,10 +310,7 @@ function ShipmentDetail({ shipment, onUpdate, onDelete, onBack, onWarehouseUpdat
           <div className="card">
             <div style={{ fontWeight: 600, marginBottom: 12 }}>Продажа</div>
             <Field label="Продажная цена, ₽"><input type="number" value={sale.sale_price_rub} onChange={e => setSale(f => ({ ...f, sale_price_rub: e.target.value }))} placeholder="0" /></Field>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '0.9rem' }}>
-              <input type="checkbox" id="usn" checked={sale.usn} onChange={e => setSale(f => ({ ...f, usn: e.target.checked }))} style={{ width: 16, height: 16, accentColor: '#0077B6' }} />
-              <label htmlFor="usn" style={{ fontSize: 13, color: '#555', cursor: 'pointer' }}>Вычесть УСН 6%</label>
-            </div>
+           
             {sale.sale_price_rub > 0 && (() => {
               const revenue = +sale.sale_price_rub;
               const tax = sale.usn ? Math.round(revenue * 0.06) : 0;
@@ -325,7 +322,7 @@ function ShipmentDetail({ shipment, onUpdate, onDelete, onBack, onWarehouseUpdat
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <tbody>
                       <tr><td className="muted">Выручка</td><td style={{ textAlign: 'right' }}>{fmt(revenue)} ₽</td></tr>
-                      {sale.usn && <tr><td className="muted">УСН 6%</td><td style={{ textAlign: 'right', color: '#d93636' }}>−{fmt(tax)} ₽</td></tr>}
+                      {<tr><td className="muted">УСН 6%</td><td style={{ textAlign: 'right', color: '#d93636' }}>−{fmt(tax)} ₽</td></tr>}
                       <tr><td className="muted">Себестоимость</td><td style={{ textAlign: 'right', color: '#d93636' }}>−{fmt(cost)} ₽</td></tr>
                       <tr style={{ borderTop: '1px solid #ddd' }}><td style={{ fontWeight: 600, paddingTop: 6 }}>Чистая прибыль</td><td style={{ textAlign: 'right', fontWeight: 700, color: profit >= 0 ? '#15803d' : '#d93636', paddingTop: 6 }}>{profit >= 0 ? '+' : ''}{fmt(profit)} ₽</td></tr>
                       <tr><td className="muted">Каждому 👤</td><td style={{ textAlign: 'right', color: '#0077B6', fontWeight: 600 }}>{perPerson >= 0 ? '+' : ''}{fmt(perPerson)} ₽</td></tr>
@@ -384,6 +381,28 @@ function WarehouseItemDetail({ item, onUpdate, onDelete, onBack }) {
     const updated = { ...item, qty: item.qty - qty, moves: [...(item.moves || []), move] };
     await apiFetch('/api/warehouse', { method: 'PUT', body: JSON.stringify(updated) });
     onUpdate(updated); setShowSale(false); setSaleQty(''); setSaleNote(''); setSaleAmount(''); setSaleItems([]); setSaving(false);
+
+// Авто-закрытие поставки если все товары проданы
+if (updated.shipment_id) {
+  try {
+    const allItems = await apiFetch('/api/warehouse');
+    const siblings = allItems.filter(i => i.shipment_id === updated.shipment_id);
+    const allSold = siblings.length > 0 && siblings.every(i => (i.id === updated.id ? updated.qty : i.qty) === 0);
+    if (allSold) {
+      const totalRevenue = siblings.reduce((sum, i) => {
+        const moves = (i.id === updated.id ? updated.moves : i.moves) || [];
+        return sum + moves.filter(m => m.type === 'out').reduce((s, m) => s + (m.sale_amount || 0), 0);
+      }, 0);
+      const tax = Math.round(totalRevenue * 0.06);
+      const shipments = await apiFetch('/api/shipments');
+      const shipment = shipments.find(s => s.id === updated.shipment_id);
+      if (shipment && shipment.status !== 'sold') {
+        const updatedShipment = { ...shipment, status: 'sold', sale_price_rub: totalRevenue, usn_tax: tax, sold_date: new Date().toISOString().slice(0, 10) };
+        await apiFetch('/api/shipments', { method: 'PUT', body: JSON.stringify(updatedShipment) });
+      }
+    }
+  } catch(e) { console.error('auto-close error', e); }
+}
   }
 
   async function handleReceive() {
@@ -575,6 +594,7 @@ export default function Home() {
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(true);
 const [filter, setFilter] = useState('all');
+const [showProfit, setShowProfit] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -612,7 +632,63 @@ const [filter, setFilter] = useState('all');
         ))}
       </div>
 
-      {tab === 'shipments' && (
+      {showProfit && (
+<div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'flex-end' }} onClick={() => setShowProfit(false)}>
+<div style={{ background: '#fff', borderRadius: '16px 16px 0 0', padding: '1.5rem', width: '100%', maxHeight: '80vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
+<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.2rem' }}>
+<div style={{ fontSize: 18, fontWeight: 700 }}>Прибыль по партиям</div>
+<button onClick={() => setShowProfit(false)} style={{ border: 'none', background: 'none', fontSize: 20, cursor: 'pointer' }}>✕</button>
+</div>
+{shipments.filter(s => s.status === 'sold').sort((a,b) => new Date(b.sold_date||b.createdAt) - new Date(a.sold_date||a.createdAt)).map(s => {
+const cost = (s.paid_rub||0) + (s.extra_paid_rub||0) + (s.delivery_rub||0);
+const tax = s.usn_tax || Math.round((s.sale_price_rub||0) * 0.06);
+const profit = (s.sale_price_rub||0) - tax - cost;
+const perPerson = Math.round(profit / 2);
+return (
+<div key={s.id} style={{ background: '#f8fafc', borderRadius: 12, padding: '1rem', marginBottom: 10, border: '1px solid #e0eef8' }}>
+<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+<div>
+<div style={{ fontWeight: 600, fontSize: 15 }}>{s.name}</div>
+<div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>{s.sold_date || s.arrived_date || ''}</div>
+</div>
+<div style={{ fontWeight: 700, fontSize: 16, color: profit >= 0 ? '#15803d' : '#d93636' }}>{profit >= 0 ? '+' : ''}{fmt(profit)} ₽</div>
+</div>
+<table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}><tbody>
+<tr><td style={{ color: '#888', paddingBottom: 4 }}>Выручка</td><td style={{ textAlign: 'right', paddingBottom: 4 }}>{fmt(s.sale_price_rub)} ₽</td></tr>
+<tr><td style={{ color: '#888', paddingBottom: 4 }}>Себестоимость</td><td style={{ textAlign: 'right', color: '#d93636', paddingBottom: 4 }}>-{fmt(cost)} ₽</td></tr>
+<tr><td style={{ color: '#888', paddingBottom: 4 }}>Налог УСН 6%</td><td style={{ textAlign: 'right', color: '#d93636', paddingBottom: 4 }}>-{fmt(tax)} ₽</td></tr>
+<tr style={{ borderTop: '1px solid #e0eef8' }}>
+<td style={{ paddingTop: 8, fontWeight: 600 }}>Каждому 👤</td>
+<td style={{ textAlign: 'right', paddingTop: 8, fontWeight: 700, color: '#0077B6', fontSize: 15 }}>{perPerson >= 0 ? '+' : ''}{fmt(perPerson)} ₽</td>
+</tr>
+</tbody></table>
+</div>
+);
+})}
+<div style={{ background: 'linear-gradient(135deg,#0077B6,#48CAE4)', borderRadius: 12, padding: '1rem', color: '#fff', marginTop: 8 }}>
+<div style={{ fontSize: 13, opacity: 0.85, marginBottom: 6 }}>Итого по всем партиям</div>
+{(() => {
+const sold = shipments.filter(s => s.status === 'sold');
+const totRev = sold.reduce((s,x) => s + (x.sale_price_rub||0), 0);
+const totCost = sold.reduce((s,x) => s + (x.paid_rub||0) + (x.extra_paid_rub||0) + (x.delivery_rub||0), 0);
+const totTax = sold.reduce((s,x) => s + (x.usn_tax || Math.round((x.sale_price_rub||0)*0.06)), 0);
+const totProfit = totRev - totCost - totTax;
+return (
+<div>
+<div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}><span style={{ opacity: 0.85 }}>Выручка</span><span style={{ fontWeight: 600 }}>{fmt(totRev)} ₽</span></div>
+<div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}><span style={{ opacity: 0.85 }}>Налог УСН</span><span style={{ fontWeight: 600 }}>-{fmt(totTax)} ₽</span></div>
+<div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.3)', paddingTop: 8, marginTop: 4 }}>
+<span style={{ fontWeight: 700, fontSize: 15 }}>Каждому 👤</span>
+<span style={{ fontWeight: 800, fontSize: 18 }}>{fmt(Math.round(totProfit/2))} ₽</span>
+</div>
+</div>
+);
+})()}
+</div>
+</div>
+</div>
+)}
+{tab === 'shipments' && (
         <div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
             <div><div style={{ fontSize: 22, fontWeight: 700 }}>Поставки</div><div className="muted" style={{ fontSize: 13, marginTop: 2 }}>Китай → Россия</div></div>
@@ -623,7 +699,10 @@ const [filter, setFilter] = useState('all');
               <MetricCard label="Всего" value={shipments.length} />
               <MetricCard label="В пути" value={shipments.filter(s => s.status === 'transit').length} />
               <MetricCard label="Прибыло" value={shipments.filter(s => s.status === 'arrived').length} />
-              <MetricCard label="Прибыль" value={`${totalProfit >= 0 ? '+' : ''}${fmt(totalProfit)} ₽`} cls={shipments.some(s => s.status === 'sold') ? (totalProfit >= 0 ? 'success' : 'danger') : ''} />
+              <div className="metric-card" style={{ cursor: shipments.some(s => s.status === 'sold') ? 'pointer' : 'default' }} onClick={() => shipments.some(s => s.status === 'sold') && setShowProfit(true)}>
+<div className="metric-label">Прибыль {shipments.some(s => s.status === 'sold') && <span style={{fontSize:10}}>↗️</span>}</div>
+<div className={`metric-value ${shipments.some(s => s.status === 'sold') ? (totalProfit >= 0 ? 'success' : 'danger') : ''}`}>{totalProfit >= 0 ? '+' : ''}{fmt(totalProfit)} ₽</div>
+</div>
             </div>
           )}
           {shipments.length > 0 && (
