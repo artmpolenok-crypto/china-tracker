@@ -124,7 +124,7 @@ function NewShipment({ onSave, onCancel }) {
           <Field label="Итого, ¥"><input type="number" value={form.total_cny} onChange={e => set('total_cny', e.target.value)} placeholder="0" /></Field>
           <div className="grid-2">
             <Field label="Курс CNY/RUB"><input type="number" value={form.cny_rate} onChange={e => set('cny_rate', e.target.value)} placeholder="13.5" /></Field>
-            <Field label="Оплачено, ₽"><input type="number" value={form.paid_rub} onChange={e => set('paid_rub', e.target.value)} placeholder="0" /></Field>
+            <Field label="Оплачено, ₽"><input type="number" value={form.paid_rub} onChange={e => set('paid_rub', e.target.value)} placeholder={form.total_cny && form.cny_rate ? String(Math.round(+form.total_cny * +form.cny_rate)) : '0'} onFocus={e => { if (!form.paid_rub && form.total_cny && form.cny_rate) set('paid_rub', Math.round(+form.total_cny * +form.cny_rate)); }} /></Field>
           </div>
           <div className="row mt-1"><button onClick={() => setStep(1)}>← Назад</button><button className="primary flex-1" onClick={() => setStep(3)}>Далее →</button></div>
         </div>
