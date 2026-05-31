@@ -176,7 +176,7 @@ function ShipmentDetail({ shipment, onUpdate, onDelete, onBack, onWarehouseUpdat
   }
 
   const cost = (shipment.paid_rub || 0) + (shipment.extra_paid_rub || 0) + (shipment.delivery_rub || 0);
-  const profit = shipment.status === 'sold' ? (shipment.sale_price_rub || 0) - cost : null;
+  const profit = shipment.status === 'sold' ? (shipment.sale_price_rub || 0) - (shipment.usn_tax || 0) - cost : null;
   const margin = profit !== null && cost > 0 ? ((profit / cost) * 100).toFixed(1) : null;
   const previewProfit = sale.sale_price_rub ? (+sale.sale_price_rub) - cost : null;
 
@@ -187,9 +187,11 @@ function ShipmentDetail({ shipment, onUpdate, onDelete, onBack, onWarehouseUpdat
     const updated = { ...shipment, status: 'arrived', extra_paid_rub: +arrival.extra_paid_rub || 0, delivery_rub: +arrival.delivery_rub || 0, arrived_date: arrival.arrived_date };
     await apiFetch('/api/shipments', { method: 'PUT', body: JSON.stringify(updated) });
 
-    // Автоматически добавляем все позиции на склад
+    // Автоматически добавляем товары на склад (без расходных позиций)
     if (shipment.items?.length > 0) {
-      const warehouseItems = shipment.items.filter(i => i.name && i.qty > 0).map(item => ({
+      const expenseKeywords = ['доставка', 'упаковка', 'поддон', 'транспорт', 'фрахт', 'тара', 'паллет', 'пломба', 'страховка', '运费', '木托', '包装'];
+      const isExpense = (name) => expenseKeywords.some(k => name.toLowerCase().includes(k.toLowerCase()));
+      const warehouseItems = shipment.items.filter(i => i.name && i.qty > 0 && !isExpense(i.name)).map(item => ({
         id: genId(),
         createdAt: new Date().toISOString(),
         name: item.name,
@@ -212,7 +214,12 @@ function ShipmentDetail({ shipment, onUpdate, onDelete, onBack, onWarehouseUpdat
     setSaving(false);
   }
 
-  async function doSale() { await save({ ...shipment, status: 'sold', sale_price_rub: +sale.sale_price_rub || 0, sold_date: new Date().toISOString().slice(0, 10) }); setShowSale(false); }
+  async function doSale() {
+    const revenue = +sale.sale_price_rub || 0;
+    const tax = sale.usn ? Math.round(revenue * 0.06) : 0;
+    await save({ ...shipment, status: 'sold', sale_price_rub: revenue, usn_tax: tax, sold_date: new Date().toISOString().slice(0, 10) });
+    setShowSale(false);
+  }
   async function doDelete() { if (!confirm('Удалить поставку?')) return; await apiFetch('/api/shipments', { method: 'DELETE', body: JSON.stringify({ id: shipment.id }) }); onDelete(); }
 
   return (
@@ -262,6 +269,8 @@ function ShipmentDetail({ shipment, onUpdate, onDelete, onBack, onWarehouseUpdat
           {shipment.arrived_date && <Row label="Прибыл" value={shipment.arrived_date} />}
           {shipment.extra_paid_rub > 0 && <Row label="Доп. оплата" value={`${fmt(shipment.extra_paid_rub)} ₽`} />}
           {shipment.sale_price_rub > 0 && <Row label="Продано за" value={`${fmt(shipment.sale_price_rub)} ₽`} />}
+          {shipment.usn_tax > 0 && <Row label="УСН 6%" value={`−${fmt(shipment.usn_tax)} ₽`} />}
+          {shipment.sale_price_rub > 0 && profit !== null && <Row label="Каждому 👤" value={`${Math.round(profit/2) >= 0 ? '+' : ''}${fmt(Math.round(profit/2))} ₽`} />}
           {shipment.sold_date && <Row label="Дата продажи" value={shipment.sold_date} />}
         </tbody></table>
       </div>
@@ -301,7 +310,30 @@ function ShipmentDetail({ shipment, onUpdate, onDelete, onBack, onWarehouseUpdat
           <div className="card">
             <div style={{ fontWeight: 600, marginBottom: 12 }}>Продажа</div>
             <Field label="Продажная цена, ₽"><input type="number" value={sale.sale_price_rub} onChange={e => setSale(f => ({ ...f, sale_price_rub: e.target.value }))} placeholder="0" /></Field>
-            {previewProfit !== null && <div className={`profit-preview ${previewProfit >= 0 ? 'pos' : 'neg'}`}>Прибыль: {previewProfit >= 0 ? '+' : ''}{fmt(previewProfit)} ₽{cost > 0 ? ` (${((previewProfit / cost) * 100).toFixed(1)}%)` : ''}</div>}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '0.9rem' }}>
+              <input type="checkbox" id="usn" checked={sale.usn} onChange={e => setSale(f => ({ ...f, usn: e.target.checked }))} style={{ width: 16, height: 16, accentColor: '#0077B6' }} />
+              <label htmlFor="usn" style={{ fontSize: 13, color: '#555', cursor: 'pointer' }}>Вычесть УСН 6%</label>
+            </div>
+            {sale.sale_price_rub > 0 && (() => {
+              const revenue = +sale.sale_price_rub;
+              const tax = sale.usn ? Math.round(revenue * 0.06) : 0;
+              const netRevenue = revenue - tax;
+              const profit = netRevenue - cost;
+              const perPerson = Math.round(profit / 2);
+              return (
+                <div className="card" style={{ background: '#f0f8ff', marginBottom: 12, fontSize: 13 }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <tbody>
+                      <tr><td className="muted">Выручка</td><td style={{ textAlign: 'right' }}>{fmt(revenue)} ₽</td></tr>
+                      {sale.usn && <tr><td className="muted">УСН 6%</td><td style={{ textAlign: 'right', color: '#d93636' }}>−{fmt(tax)} ₽</td></tr>}
+                      <tr><td className="muted">Себестоимость</td><td style={{ textAlign: 'right', color: '#d93636' }}>−{fmt(cost)} ₽</td></tr>
+                      <tr style={{ borderTop: '1px solid #ddd' }}><td style={{ fontWeight: 600, paddingTop: 6 }}>Чистая прибыль</td><td style={{ textAlign: 'right', fontWeight: 700, color: profit >= 0 ? '#15803d' : '#d93636', paddingTop: 6 }}>{profit >= 0 ? '+' : ''}{fmt(profit)} ₽</td></tr>
+                      <tr><td className="muted">Каждому 👤</td><td style={{ textAlign: 'right', color: '#0077B6', fontWeight: 600 }}>{perPerson >= 0 ? '+' : ''}{fmt(perPerson)} ₽</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              );
+            })()}
             <div className="row"><button onClick={() => setShowSale(false)}>Отмена</button><button className="primary flex-1" onClick={doSale} disabled={saving}>Сохранить</button></div>
           </div>
         )}
@@ -340,13 +372,18 @@ function WarehouseItemDetail({ item, onUpdate, onDelete, onBack }) {
     setParsing(false);
   }
 
+  const [saleAmount, setSaleAmount] = useState('');
+
   async function handleSale() {
     const qty = +saleQty;
     if (!qty || qty > item.qty || qty <= 0) return;
     setSaving(true);
-    const updated = { ...item, qty: item.qty - qty, moves: [...(item.moves || []), { date: new Date().toISOString(), type: 'out', qty, note: saleNote || 'Продажа' }] };
+    const costTotal = (item.cost_rub || 0) * qty;
+    const saleTotal = +saleAmount || 0;
+    const move = { date: new Date().toISOString(), type: 'out', qty, note: saleNote || 'Продажа', sale_amount: saleTotal, cost_amount: costTotal };
+    const updated = { ...item, qty: item.qty - qty, moves: [...(item.moves || []), move] };
     await apiFetch('/api/warehouse', { method: 'PUT', body: JSON.stringify(updated) });
-    onUpdate(updated); setShowSale(false); setSaleQty(''); setSaleNote(''); setSaleItems([]); setSaving(false);
+    onUpdate(updated); setShowSale(false); setSaleQty(''); setSaleNote(''); setSaleAmount(''); setSaleItems([]); setSaving(false);
   }
 
   async function handleReceive() {
@@ -472,6 +509,15 @@ function WarehouseItemDetail({ item, onUpdate, onDelete, onBack }) {
             <Field label={`Количество (на складе: ${item.qty} ${item.unit})`}>
               <input type="number" value={saleQty} onChange={e => setSaleQty(e.target.value)} max={item.qty} placeholder="0" />
             </Field>
+            <Field label="Сумма продажи, ₽">
+              <input type="number" value={saleAmount} onChange={e => setSaleAmount(e.target.value)} placeholder="0"
+                onFocus={e => { if (!saleAmount && saleQty && item.sell_price) setSaleAmount(String(Math.round(+saleQty * item.sell_price))); }} />
+            </Field>
+            {saleAmount && saleQty && item.cost_rub ? (
+              <div className={`profit-preview ${+saleAmount - +saleQty * item.cost_rub >= 0 ? 'pos' : 'neg'}`}>
+                Прибыль: {(+saleAmount - +saleQty * item.cost_rub) >= 0 ? '+' : ''}{Math.round(+saleAmount - +saleQty * item.cost_rub).toLocaleString('ru-RU')} ₽
+              </div>
+            ) : null}
             <Field label="Комментарий"><input value={saleNote} onChange={e => setSaleNote(e.target.value)} placeholder="Продажа" /></Field>
             <div className="row"><button onClick={() => { setShowSale(false); setSaleItems([]); }}>Отмена</button><button className="primary flex-1" onClick={handleSale} disabled={saving || !saleQty || +saleQty > item.qty || +saleQty <= 0}>Списать {saleQty} {item.unit}</button></div>
           </div>
@@ -495,6 +541,7 @@ function WarehouseItemDetail({ item, onUpdate, onDelete, onBack }) {
               <div><span style={{ color: m.type === 'in' ? '#15803d' : '#d93636', marginRight: 8 }}>{m.type === 'in' ? '↑' : '↓'}</span>{m.note || (m.type === 'in' ? 'Поступление' : 'Списание')}</div>
               <div style={{ textAlign: 'right' }}>
                 <div style={{ color: m.type === 'in' ? '#15803d' : '#d93636', fontWeight: 500 }}>{m.type === 'in' ? '+' : '-'}{m.qty} {item.unit}</div>
+                {m.type === 'out' && m.sale_amount > 0 && <div style={{ fontSize: 11, color: m.sale_amount - (m.cost_amount||0) >= 0 ? '#15803d' : '#d93636', fontWeight: 500 }}>{m.sale_amount - (m.cost_amount||0) >= 0 ? '+' : ''}{Math.round(m.sale_amount - (m.cost_amount||0)).toLocaleString('ru-RU')} ₽</div>}
                 <div className="muted" style={{ fontSize: 11 }}>{new Date(m.date).toLocaleDateString('ru-RU')}</div>
               </div>
             </div>
@@ -598,13 +645,19 @@ export default function Home() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
             <div><div style={{ fontSize: 22, fontWeight: 700 }}>Склад</div><div className="muted" style={{ fontSize: 13, marginTop: 2 }}>{warehouse.length} позиций</div></div>
           </div>
-          {warehouse.length > 0 && (
-            <div className="grid-4" style={{ marginBottom: '1.5rem' }}>
-              <MetricCard label="Позиций" value={warehouse.length} />
-              <MetricCard label="Единиц" value={fmt(warehouse.reduce((s, i) => s + (i.qty || 0), 0))} />
-              <MetricCard label="Мало" value={warehouse.filter(i => (i.qty||0) <= (i.min_qty||5) && (i.qty||0) > 0).length} cls={warehouse.filter(i => (i.qty||0) <= (i.min_qty||5) && (i.qty||0) > 0).length > 0 ? 'danger' : ''} />
-              <MetricCard label="Нет" value={warehouse.filter(i => (i.qty||0) === 0).length} cls={warehouse.filter(i => (i.qty||0) === 0).length > 0 ? 'danger' : ''} />
-              <MetricCard label="Сумма (продажи)" value={`${fmt(warehouse.reduce((s, i) => s + ((i.sell_price || 0) * (i.qty || 0)), 0))} ₽`} />
+          {warehouse.length > 0 && (()=>{
+            const allMoves = warehouse.flatMap(i => i.moves || []);
+            const totalProfit = allMoves.filter(m => m.type === 'out' && m.sale_amount > 0).reduce((s, m) => s + (m.sale_amount - (m.cost_amount||0)), 0);
+            const totalSell = warehouse.reduce((s, i) => s + ((i.sell_price||0)*(i.qty||0)), 0);
+            return (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px,1fr))', gap: 10, marginBottom: '1.5rem' }}>
+                <MetricCard label="Позиций" value={warehouse.length} />
+                <MetricCard label="Единиц" value={fmt(warehouse.reduce((s, i) => s + (i.qty || 0), 0))} />
+                <MetricCard label="Остаток (продажи)" value={`${fmt(totalSell)} ₽`} />
+                <MetricCard label="Прибыль со склада" value={`${totalProfit >= 0 ? '+' : ''}${fmt(totalProfit)} ₽`} cls={totalProfit > 0 ? 'success' : totalProfit < 0 ? 'danger' : ''} />
+              </div>
+            );
+          })()} ₽`} />
             </div>
           )}
           {warehouse.length === 0 ? (
