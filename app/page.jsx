@@ -553,6 +553,18 @@ function WarehouseItemDetail({ item, onUpdate, onDelete, onBack }) {
   );
 }
 
+function WarehouseStats({ warehouse }) {
+  const totalQty = warehouse.reduce((s, i) => s + (i.qty || 0), 0);
+  const totalSell = warehouse.reduce((s, i) => s + ((i.sell_price || 0) * (i.qty || 0)), 0);
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px,1fr))', gap: 10, marginBottom: '1.5rem' }}>
+      <MetricCard label="Позиций" value={warehouse.length} />
+      <MetricCard label="Единиц" value={fmt(totalQty)} />
+      <MetricCard label="Остаток (продажи)" value={fmt(totalSell) + ' ₽'} />
+    </div>
+  );
+}
+
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
 
 export default function Home() {
@@ -645,13 +657,7 @@ export default function Home() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
             <div><div style={{ fontSize: 22, fontWeight: 700 }}>Склад</div><div className="muted" style={{ fontSize: 13, marginTop: 2 }}>{warehouse.length} позиций</div></div>
           </div>
-          {warehouse.length > 0 && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px,1fr))', gap: 10, marginBottom: '1.5rem' }}>
-              <MetricCard label="Позиций" value={warehouse.length} />
-              <MetricCard label="Единиц" value={fmt(warehouse.reduce((s, i) => s + (i.qty || 0), 0))} />
-              <MetricCard label="Остаток (продажи)" value={fmt(warehouse.reduce((s, i) => s + ((i.sell_price||0)*(i.qty||0)), 0)) + ' ₽'} />
-            </div>
-          )} ₽`} />
+          {warehouse.length > 0 && <WarehouseStats warehouse={warehouse} />} ₽`} />
             </div>
           )}
           {warehouse.length === 0 ? (
