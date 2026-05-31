@@ -657,9 +657,7 @@ export default function Home() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
             <div><div style={{ fontSize: 22, fontWeight: 700 }}>Склад</div><div className="muted" style={{ fontSize: 13, marginTop: 2 }}>{warehouse.length} позиций</div></div>
           </div>
-          {warehouse.length > 0 && <WarehouseStats warehouse={warehouse} />} ₽`} />
-            </div>
-          )}
+          {warehouse.length > 0 && <WarehouseStats warehouse={warehouse} />}
           {warehouse.length === 0 ? (
             <div className="empty-state"><div style={{ fontSize: 48, marginBottom: '1rem' }}>🏪</div><div style={{ fontSize: 16, fontWeight: 600, marginBottom: 6 }}>Склад пуст</div><div className="muted">Когда груз прибудет — товары добавятся автоматически</div></div>
           ) : (
