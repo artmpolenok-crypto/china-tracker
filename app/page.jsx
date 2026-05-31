@@ -48,16 +48,16 @@ const BADGES = { new: { label: 'Новый', cls: 'badge-new' }, transit: { labe
 function Badge({ status }) { const b = BADGES[status] || BADGES.new; return <span className={`badge ${b.cls}`}>{b.label}</span>; }
 function Field({ label, children }) { return <div className="field"><label>{label}</label>{children}</div>; }
 function Row({ label, value }) { return <tr><td className="muted" style={{ width: '50%' }}>{label}</td><td style={{ textAlign: 'right' }}>{value}</td></tr>; }
-function MetricCard({ label, value, cls, sub }) { return <div className="metric-card"><div className="metric-label">{label}</div><div className={`metric-value ${cls || ''}`}>{value}</div>{sub && <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 2 }}>{sub}</div>}</div>; }
+function MetricCard({ label, value, cls, sub }) { return <div className="metric-card"><div className="metric-label">{label}</div><div className={`metric-value ${cls || ''}`}>{value}</div>{sub && <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>{sub}</div>}</div>; }
 
 function DropZone({ onFile, loading, label }) {
   const [drag, setDrag] = useState(false);
   const ref = useRef();
-  function handleDrop(e) { e.preventDefault(); e.stopPropagation(); setDrag(false); const file = e.dataTransfer.files[0]; if (file) onFile(file); }
-  function handleDragOver(e) { e.preventDefault(); e.stopPropagation(); setDrag(true); }
   return (
-    <div onDragOver={handleDragOver} onDragEnter={handleDragOver} onDragLeave={() => setDrag(false)} onDrop={handleDrop} onClick={() => !loading && ref.current.click()}
-      style={{ border: `1.5px dashed ${drag ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.3)'}`, borderRadius: 12, padding: '1.5rem 1rem', textAlign: 'center', cursor: loading ? 'default' : 'pointer', background: drag ? 'rgba(255,255,255,0.08)' : 'transparent' }}>
+    <div onDragOver={e => { e.preventDefault(); setDrag(true); }} onDragLeave={() => setDrag(false)}
+      onDrop={e => { e.preventDefault(); setDrag(false); if (e.dataTransfer.files[0]) onFile(e.dataTransfer.files[0]); }}
+      onClick={() => !loading && ref.current.click()}
+      className={`drop-zone${drag ? ' drag' : ''}`}>
       <input ref={ref} type="file" accept=".pdf,.png,.jpg,.jpeg,.xlsx,.xls,.csv" style={{ display: 'none' }} onChange={e => e.target.files[0] && onFile(e.target.files[0])} />
       <div style={{ fontSize: 28, marginBottom: 6 }}>📄</div>
       {loading ? <div className="muted">Распознаём...</div> : <><div style={{ fontWeight: 500, marginBottom: 4 }}>{label || 'Загрузите накладную'}</div><div className="muted" style={{ fontSize: 12 }}>PDF · Фото · Excel</div></>}
@@ -71,13 +71,12 @@ function NewShipment({ onSave, onCancel }) {
   const [step, setStep] = useState(1);
   const [parsing, setParsing] = useState(false);
   const [parseError, setParseError] = useState('');
-  const [fileName, setFileName] = useState('');
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ name: '', items: [], total_cny: '', invoice_number: '', supplier: '', cny_rate: '', paid_rub: '', ship_date: '', eta_date: '' });
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
   async function handleFile(file) {
-    setFileName(file.name); setParsing(true); setParseError('');
+    setParsing(true); setParseError('');
     try {
       const d = await parseInvoiceFile(file);
       setForm(f => ({ ...f, items: d.items || [], total_cny: d.total_cny || '', invoice_number: d.invoice_number || '', supplier: d.supplier || '', name: d.supplier ? `Поставка — ${d.supplier}` : `Поставка ${new Date().toLocaleDateString('ru-RU')}` }));
@@ -95,19 +94,18 @@ function NewShipment({ onSave, onCancel }) {
   }
 
   const totalCNY = +form.total_cny || form.items.reduce((s, i) => s + (i.total_cny || 0), 0);
-  const estRUB = totalCNY && form.cny_rate ? totalCNY * form.cny_rate : null;
 
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: '1.5rem' }}>
         <button onClick={onCancel} style={{ padding: '6px 10px' }}>← Назад</button>
-        <div style={{ fontSize: 18, fontWeight: 500 }}>Новая поставка</div>
+        <div style={{ fontSize: 18, fontWeight: 600 }}>Новая поставка</div>
       </div>
-      <div className="step-bar" style={{ marginBottom: '1.5rem' }}>
+      <div className="step-bar">
         {['Накладная','Оплата','Доставка','Итог'].map((s, i) => (
           <div key={i} style={{ flex: 1 }}>
-            <div className="step-seg" style={{ background: i < step ? '#fff' : 'rgba(255,255,255,0.2)', marginBottom: 3 }} />
-            {i === step - 1 && <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', textAlign: 'center' }}>{s}</div>}
+            <div className="step-seg" style={{ background: i < step ? 'linear-gradient(135deg,#0077B6,#48CAE4)' : '#ddd', marginBottom: 3 }} />
+            {i === step - 1 && <div style={{ fontSize: 11, color: '#0077B6', textAlign: 'center', fontWeight: 500 }}>{s}</div>}
           </div>
         ))}
       </div>
@@ -116,20 +114,18 @@ function NewShipment({ onSave, onCancel }) {
           <DropZone onFile={handleFile} loading={parsing} />
           {parseError && <div className="error-box">{parseError}</div>}
           <div className="mt-1" style={{ textAlign: 'center' }}>
-            <button style={{ border: 'none', background: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', fontSize: 13 }} onClick={() => { set('name', `Поставка ${new Date().toLocaleDateString('ru-RU')}`); setStep(2); }}>Пропустить →</button>
+            <button style={{ border: 'none', background: 'none', color: '#0077B6', cursor: 'pointer', fontSize: 13 }} onClick={() => { set('name', `Поставка ${new Date().toLocaleDateString('ru-RU')}`); setStep(2); }}>Пропустить →</button>
           </div>
         </div>
       )}
       {step === 2 && (
         <div>
-          {fileName && <div className="info-box">📎 {fileName} — {form.items.length > 0 ? `${form.items.length} позиций` : 'вручную'}</div>}
           <Field label="Название поставки"><input value={form.name} onChange={e => set('name', e.target.value)} placeholder="Электроника январь" /></Field>
           <Field label="Итого, ¥"><input type="number" value={form.total_cny} onChange={e => set('total_cny', e.target.value)} placeholder="0" /></Field>
           <div className="grid-2">
             <Field label="Курс CNY/RUB"><input type="number" value={form.cny_rate} onChange={e => set('cny_rate', e.target.value)} placeholder="13.5" /></Field>
             <Field label="Оплачено, ₽"><input type="number" value={form.paid_rub} onChange={e => set('paid_rub', e.target.value)} placeholder="0" /></Field>
           </div>
-          {estRUB && <div className="muted mb-1" style={{ fontSize: 13 }}>≈ {fmt(estRUB)} ₽</div>}
           <div className="row mt-1"><button onClick={() => setStep(1)}>← Назад</button><button className="primary flex-1" onClick={() => setStep(3)}>Далее →</button></div>
         </div>
       )}
@@ -145,15 +141,14 @@ function NewShipment({ onSave, onCancel }) {
       {step === 4 && (
         <div>
           <div className="card mb-1">
-            <div style={{ fontWeight: 500, fontSize: 15, marginBottom: 12 }}>{form.name}</div>
+            <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 12 }}>{form.name}</div>
             <table className="items-table"><tbody>
               {totalCNY > 0 && <Row label="Закупка" value={`¥ ${fmt(totalCNY)}`} />}
               {form.cny_rate && <Row label="Курс" value={`${form.cny_rate} ₽/¥`} />}
               {form.paid_rub && <Row label="Оплачено" value={`${fmt(+form.paid_rub)} ₽`} />}
               {form.ship_date && <Row label="Отправлено" value={form.ship_date} />}
-              {form.eta_date && <Row label="Ожидается" value={form.eta_date} />}
             </tbody></table>
-            {form.items.length > 0 && (<><hr className="divider" /><div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>Позиции ({form.items.length}):</div>{form.items.slice(0,4).map((item,i) => (<div key={i} style={{ fontSize: 12, display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}><span>{item.name}</span><span className="muted">×{item.qty} · ¥{fmt(item.total_cny)}</span></div>))}{form.items.length > 4 && <div className="muted" style={{ fontSize: 12 }}>...и ещё {form.items.length - 4}</div>}</>)}
+            {form.items.length > 0 && <><hr className="divider" /><div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>Позиции ({form.items.length}):</div>{form.items.slice(0,4).map((item,i) => (<div key={i} style={{ fontSize: 12, display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}><span>{item.name}</span><span className="muted">×{item.qty}</span></div>))}</>}
           </div>
           <div className="row"><button onClick={() => setStep(3)}>← Назад</button><button className="primary flex-1" onClick={handleSave} disabled={saving}>{saving ? 'Сохранение...' : 'Сохранить поставку'}</button></div>
         </div>
@@ -162,93 +157,10 @@ function NewShipment({ onSave, onCancel }) {
   );
 }
 
-// ─── ADD SHIPMENT TO WAREHOUSE ────────────────────────────────────────────────
-
-function AddShipmentToWarehouse({ shipment, onDone, onCancel }) {
-  const initItems = (shipment.items || []).map(item => ({
-    id: genId(),
-    name: item.name || '',
-    qty: item.qty || 0,
-    unit: 'шт',
-    dimensions: '',
-    cost_rub: shipment.cny_rate > 0 && item.unit_price_cny ? Math.round(item.unit_price_cny * shipment.cny_rate) : 0,
-    sell_price: 0,
-    photo: null,
-    min_qty: 5,
-    moves: [{ date: new Date().toISOString(), type: 'in', qty: item.qty || 0, note: `Из поставки: ${shipment.name}` }]
-  }));
-
-  const [items, setItems] = useState(initItems);
-  const [saving, setSaving] = useState(false);
-
-  function updateItem(idx, key, val) {
-    setItems(prev => prev.map((item, i) => i === idx ? { ...item, [key]: val, moves: key === 'qty' ? [{ date: new Date().toISOString(), type: 'in', qty: +val || 0, note: `Из поставки: ${shipment.name}` }] : item.moves } : item));
-  }
-
-  function removeItem(idx) { setItems(prev => prev.filter((_, i) => i !== idx)); }
-
-  async function handleSave() {
-    setSaving(true);
-    const toAdd = items.filter(i => i.name && i.qty > 0);
-    await Promise.all(toAdd.map(item => apiFetch('/api/warehouse', { method: 'POST', body: JSON.stringify({ ...item, createdAt: new Date().toISOString() }) })));
-    onDone(toAdd);
-    setSaving(false);
-  }
-
-  return (
-    <div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: '1rem' }}>
-        <button onClick={onCancel} style={{ padding: '6px 10px' }}>← Назад</button>
-        <div style={{ fontSize: 16, fontWeight: 500 }}>Добавить на склад</div>
-      </div>
-      <div className="muted mb-1" style={{ fontSize: 13 }}>Проверьте данные — фото добавите на складе позже</div>
-
-      {items.map((item, idx) => (
-        <div key={item.id} className="card" style={{ marginBottom: 10 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-            <div style={{ fontWeight: 500, fontSize: 14 }}>Позиция {idx + 1}</div>
-            <button onClick={() => removeItem(idx)} style={{ fontSize: 12, color: '#fca5a5', border: 'none', background: 'none', cursor: 'pointer' }}>✕ Убрать</button>
-          </div>
-          <Field label="Название">
-            <input value={item.name} onChange={e => updateItem(idx, 'name', e.target.value)} placeholder="Название товара" />
-          </Field>
-          <div className="grid-2">
-            <Field label="Количество">
-              <input type="number" value={item.qty} onChange={e => updateItem(idx, 'qty', +e.target.value)} placeholder="0" />
-            </Field>
-            <Field label="Единица">
-              <select value={item.unit} onChange={e => updateItem(idx, 'unit', e.target.value)}>
-                <option>шт</option><option>кг</option><option>м</option><option>л</option><option>упак</option><option>пара</option>
-              </select>
-            </Field>
-          </div>
-          <div className="grid-2">
-            <Field label="Размеры">
-              <input value={item.dimensions} onChange={e => updateItem(idx, 'dimensions', e.target.value)} placeholder="Д×Ш×В см" />
-            </Field>
-            <Field label="Цена продажи, ₽">
-              <input type="number" value={item.sell_price || ''} onChange={e => updateItem(idx, 'sell_price', +e.target.value)} placeholder="0" />
-            </Field>
-          </div>
-          {item.cost_rub > 0 && <div className="muted" style={{ fontSize: 12 }}>Себестоимость: {fmt(item.cost_rub)} ₽/шт</div>}
-        </div>
-      ))}
-
-      <div className="row mt-1">
-        <button onClick={onCancel}>Отмена</button>
-        <button className="primary flex-1" onClick={handleSave} disabled={saving || items.filter(i => i.name && i.qty > 0).length === 0}>
-          {saving ? 'Сохранение...' : `Добавить ${items.filter(i => i.name && i.qty > 0).length} позиций на склад`}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function ShipmentDetail({ shipment, onUpdate, onDelete, onBack, onAddToWarehouse }) {
+function ShipmentDetail({ shipment, onUpdate, onDelete, onBack, onWarehouseUpdate }) {
   const [showArrival, setShowArrival] = useState(false);
   const [showSale, setShowSale] = useState(false);
   const [showItems, setShowItems] = useState(false);
-  const [showAddWarehouse, setShowAddWarehouse] = useState(false);
   const [saving, setSaving] = useState(false);
   const [arrival, setArrival] = useState({ extra_paid_rub: '', delivery_rub: '', arrived_date: new Date().toISOString().slice(0, 10) });
   const [sale, setSale] = useState({ sale_price_rub: '' });
@@ -259,19 +171,45 @@ function ShipmentDetail({ shipment, onUpdate, onDelete, onBack, onAddToWarehouse
   const previewProfit = sale.sale_price_rub ? (+sale.sale_price_rub) - cost : null;
 
   async function save(updated) { setSaving(true); await apiFetch('/api/shipments', { method: 'PUT', body: JSON.stringify(updated) }); onUpdate(updated); setSaving(false); }
-  async function doArrival() { await save({ ...shipment, status: 'arrived', extra_paid_rub: +arrival.extra_paid_rub || 0, delivery_rub: +arrival.delivery_rub || 0, arrived_date: arrival.arrived_date }); setShowArrival(false); }
+
+  async function doArrival() {
+    setSaving(true);
+    const updated = { ...shipment, status: 'arrived', extra_paid_rub: +arrival.extra_paid_rub || 0, delivery_rub: +arrival.delivery_rub || 0, arrived_date: arrival.arrived_date };
+    await apiFetch('/api/shipments', { method: 'PUT', body: JSON.stringify(updated) });
+
+    // Автоматически добавляем все позиции на склад
+    if (shipment.items?.length > 0) {
+      const warehouseItems = shipment.items.filter(i => i.name && i.qty > 0).map(item => ({
+        id: genId(),
+        createdAt: new Date().toISOString(),
+        name: item.name,
+        qty: item.qty,
+        unit: 'шт',
+        dimensions: '',
+        cost_rub: shipment.cny_rate > 0 && item.unit_price_cny ? Math.round(item.unit_price_cny * shipment.cny_rate) : 0,
+        sell_price: 0,
+        photo: null,
+        min_qty: 5,
+        shipment_id: shipment.id,
+        moves: [{ date: new Date().toISOString(), type: 'in', qty: item.qty, note: `Из поставки: ${shipment.name}` }]
+      }));
+      await Promise.all(warehouseItems.map(w => apiFetch('/api/warehouse', { method: 'POST', body: JSON.stringify(w) })));
+      if (onWarehouseUpdate) onWarehouseUpdate(warehouseItems);
+    }
+
+    onUpdate(updated);
+    setShowArrival(false);
+    setSaving(false);
+  }
+
   async function doSale() { await save({ ...shipment, status: 'sold', sale_price_rub: +sale.sale_price_rub || 0, sold_date: new Date().toISOString().slice(0, 10) }); setShowSale(false); }
   async function doDelete() { if (!confirm('Удалить поставку?')) return; await apiFetch('/api/shipments', { method: 'DELETE', body: JSON.stringify({ id: shipment.id }) }); onDelete(); }
-
-  if (showAddWarehouse) {
-    return <AddShipmentToWarehouse shipment={shipment} onDone={(added) => { setShowAddWarehouse(false); onAddToWarehouse(added); }} onCancel={() => setShowAddWarehouse(false)} />;
-  }
 
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: '1.5rem' }}>
         <button onClick={onBack} style={{ padding: '6px 10px' }}>← Назад</button>
-        <div style={{ flex: 1 }}><div style={{ fontSize: 18, fontWeight: 500 }}>{shipment.name}</div><div className="muted" style={{ fontSize: 12, marginTop: 2 }}>Создан {new Date(shipment.createdAt).toLocaleDateString('ru-RU')}</div></div>
+        <div style={{ flex: 1 }}><div style={{ fontSize: 18, fontWeight: 600 }}>{shipment.name}</div><div className="muted" style={{ fontSize: 12, marginTop: 2 }}>Создан {new Date(shipment.createdAt).toLocaleDateString('ru-RU')}</div></div>
         <Badge status={shipment.status} />
       </div>
       <div className="grid-4 mb-1">
@@ -298,10 +236,10 @@ function ShipmentDetail({ shipment, onUpdate, onDelete, onBack, onAddToWarehouse
         <div className="card mb-1">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: showItems ? 10 : 0 }}>
             <div className="muted" style={{ fontSize: 12, fontWeight: 500 }}>ПОЗИЦИИ ({shipment.items.length})</div>
-            <button style={{ border: 'none', background: 'none', fontSize: 12, color: 'rgba(255,255,255,0.6)', cursor: 'pointer' }} onClick={() => setShowItems(v => !v)}>{showItems ? 'Скрыть' : 'Показать'}</button>
+            <button style={{ border: 'none', background: 'none', fontSize: 12, color: '#0077B6', cursor: 'pointer' }} onClick={() => setShowItems(v => !v)}>{showItems ? 'Скрыть' : 'Показать'}</button>
           </div>
           {showItems && shipment.items.map((item, i) => (
-            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, padding: '7px 0', borderBottom: i < shipment.items.length - 1 ? '0.5px solid rgba(255,255,255,0.1)' : 'none' }}>
+            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, padding: '7px 0', borderBottom: i < shipment.items.length - 1 ? '1px solid #f0f0f0' : 'none' }}>
               <div><div>{item.name}</div><div className="muted" style={{ fontSize: 11 }}>×{item.qty} · ¥{fmtF(item.unit_price_cny)}/шт</div></div>
               <div style={{ textAlign: 'right' }}><div>¥ {fmt(item.total_cny)}</div>{shipment.cny_rate > 0 && <div className="muted" style={{ fontSize: 11 }}>≈ {fmt(item.total_cny * shipment.cny_rate)} ₽</div>}</div>
             </div>
@@ -309,26 +247,26 @@ function ShipmentDetail({ shipment, onUpdate, onDelete, onBack, onAddToWarehouse
         </div>
       )}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {shipment.status === 'new' && <button className="primary" onClick={() => save({ ...shipment, status: 'transit' })} disabled={saving} style={{ width: '100%', justifyContent: 'center' }}>🚛 В пути</button>}
-        {shipment.status === 'transit' && !showArrival && <button className="primary" onClick={() => setShowArrival(true)} style={{ width: '100%', justifyContent: 'center' }}>📦 Груз прибыл</button>}
+        {shipment.status === 'new' && <button className="primary" onClick={() => save({ ...shipment, status: 'transit' })} disabled={saving} style={{ width: '100%', justifyContent: 'center' }}>🚛 Отправлено — в пути</button>}
+        {shipment.status === 'transit' && !showArrival && (
+          <button className="primary" onClick={() => setShowArrival(true)} style={{ width: '100%', justifyContent: 'center' }}>📦 Груз прибыл → добавить на склад</button>
+        )}
         {showArrival && (
           <div className="card">
-            <div style={{ fontWeight: 500, marginBottom: 12 }}>Оформление прибытия</div>
+            <div style={{ fontWeight: 600, marginBottom: 6 }}>Оформление прибытия</div>
+            <div className="info-box" style={{ fontSize: 12, marginBottom: 12 }}>
+              ✅ {shipment.items?.length || 0} позиций автоматически добавятся на склад
+            </div>
             <Field label="Дата прибытия"><input type="date" value={arrival.arrived_date} onChange={e => setArrival(f => ({ ...f, arrived_date: e.target.value }))} /></Field>
             <Field label="Доп. оплата в России, ₽"><input type="number" value={arrival.extra_paid_rub} onChange={e => setArrival(f => ({ ...f, extra_paid_rub: e.target.value }))} placeholder="0" /></Field>
             <Field label="Доставка, ₽"><input type="number" value={arrival.delivery_rub} onChange={e => setArrival(f => ({ ...f, delivery_rub: e.target.value }))} placeholder="0" /></Field>
-            <div className="row"><button onClick={() => setShowArrival(false)}>Отмена</button><button className="primary flex-1" onClick={doArrival} disabled={saving}>Сохранить</button></div>
+            <div className="row"><button onClick={() => setShowArrival(false)}>Отмена</button><button className="primary flex-1" onClick={doArrival} disabled={saving}>{saving ? 'Добавляем на склад...' : 'Подтвердить прибытие'}</button></div>
           </div>
         )}
-        {shipment.status === 'arrived' && shipment.items?.length > 0 && (
-          <button onClick={() => setShowAddWarehouse(true)} style={{ width: '100%', justifyContent: 'center', background: 'rgba(134,239,172,0.15)', borderColor: 'rgba(134,239,172,0.4)', color: '#86EFAC' }}>
-            🏪 Добавить товары на склад
-          </button>
-        )}
-        {shipment.status === 'arrived' && !showSale && <button className="primary" onClick={() => setShowSale(true)} style={{ width: '100%', justifyContent: 'center' }}>💰 Продажная цена</button>}
+        {shipment.status === 'arrived' && !showSale && <button className="primary" onClick={() => setShowSale(true)} style={{ width: '100%', justifyContent: 'center' }}>💰 Указать продажную цену</button>}
         {showSale && (
           <div className="card">
-            <div style={{ fontWeight: 500, marginBottom: 12 }}>Продажа</div>
+            <div style={{ fontWeight: 600, marginBottom: 12 }}>Продажа</div>
             <Field label="Продажная цена, ₽"><input type="number" value={sale.sale_price_rub} onChange={e => setSale(f => ({ ...f, sale_price_rub: e.target.value }))} placeholder="0" /></Field>
             {previewProfit !== null && <div className={`profit-preview ${previewProfit >= 0 ? 'pos' : 'neg'}`}>Прибыль: {previewProfit >= 0 ? '+' : ''}{fmt(previewProfit)} ₽{cost > 0 ? ` (${((previewProfit / cost) * 100).toFixed(1)}%)` : ''}</div>}
             <div className="row"><button onClick={() => setShowSale(false)}>Отмена</button><button className="primary flex-1" onClick={doSale} disabled={saving}>Сохранить</button></div>
@@ -342,98 +280,40 @@ function ShipmentDetail({ shipment, onUpdate, onDelete, onBack, onAddToWarehouse
 
 // ─── WAREHOUSE ────────────────────────────────────────────────────────────────
 
-function AddWarehouseItem({ onSave, onCancel }) {
-  const [parsing, setParsing] = useState(false);
-  const [parseError, setParseError] = useState('');
-  const [form, setForm] = useState({ name: '', qty: '', unit: 'шт', dimensions: '', sell_price: '', cost_rub: '', photo: null });
-  const [saving, setSaving] = useState(false);
-  const photoRef = useRef();
-  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
-
-  async function handleInvoice(file) {
-    setParsing(true); setParseError('');
-    try {
-      const d = await parseInvoiceFile(file);
-      if (d.items?.length > 0) {
-        const item = d.items[0];
-        setForm(f => ({ ...f, name: item.name || '', qty: String(item.qty || ''), cost_rub: '' }));
-      }
-    } catch { setParseError('Не удалось распознать файл'); }
-    setParsing(false);
-  }
-
-  async function handlePhoto(file) { set('photo', await compressPhoto(file)); }
-
-  async function handleSave() {
-    if (!form.name || !form.qty) return;
-    setSaving(true);
-    const item = { id: genId(), createdAt: new Date().toISOString(), name: form.name, qty: +form.qty, unit: form.unit || 'шт', dimensions: form.dimensions, sell_price: +form.sell_price || 0, cost_rub: +form.cost_rub || 0, photo: form.photo, min_qty: 5, moves: [{ date: new Date().toISOString(), type: 'in', qty: +form.qty, note: 'Начальный остаток' }] };
-    await apiFetch('/api/warehouse', { method: 'POST', body: JSON.stringify(item) });
-    onSave(item); setSaving(false);
-  }
-
-  return (
-    <div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: '1.5rem' }}>
-        <button onClick={onCancel} style={{ padding: '6px 10px' }}>← Назад</button>
-        <div style={{ fontSize: 18, fontWeight: 500 }}>Новый товар</div>
-      </div>
-
-      <div style={{ marginBottom: '1rem' }}>
-        <DropZone onFile={handleInvoice} loading={parsing} label="Загрузить накладную (предзаполнит поля)" />
-        {parseError && <div className="error-box">{parseError}</div>}
-        <div className="muted" style={{ fontSize: 12, textAlign: 'center', marginTop: 6 }}>или заполните вручную ниже</div>
-      </div>
-
-      <div style={{ marginBottom: '1rem' }}>
-        {form.photo ? (
-          <div style={{ position: 'relative' }}>
-            <img src={form.photo} alt="" style={{ width: '100%', maxHeight: 200, objectFit: 'cover', borderRadius: 12 }} />
-            <button onClick={() => set('photo', null)} style={{ position: 'absolute', top: 8, right: 8, padding: '4px 8px', fontSize: 12 }}>✕</button>
-          </div>
-        ) : (
-          <div onClick={() => photoRef.current.click()} style={{ border: '1.5px dashed rgba(255,255,255,0.3)', borderRadius: 12, padding: '1.2rem', textAlign: 'center', cursor: 'pointer' }}>
-            <div style={{ fontSize: 24, marginBottom: 4 }}>📷</div><div style={{ fontSize: 13 }}>Добавить фото товара</div>
-          </div>
-        )}
-        <input ref={photoRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => e.target.files[0] && handlePhoto(e.target.files[0])} />
-      </div>
-
-      <Field label="Название *"><input value={form.name} onChange={e => set('name', e.target.value)} placeholder="Кофейная чашка 210мл" /></Field>
-      <div className="grid-2">
-        <Field label="Количество *"><input type="number" value={form.qty} onChange={e => set('qty', e.target.value)} placeholder="0" /></Field>
-        <Field label="Единица"><select value={form.unit} onChange={e => set('unit', e.target.value)}><option>шт</option><option>кг</option><option>м</option><option>л</option><option>упак</option><option>пара</option></select></Field>
-      </div>
-      <Field label="Размеры"><input value={form.dimensions} onChange={e => set('dimensions', e.target.value)} placeholder="11.4×8.7×5.9 см" /></Field>
-      <div className="grid-2">
-        <Field label="Себестоимость, ₽"><input type="number" value={form.cost_rub} onChange={e => set('cost_rub', e.target.value)} placeholder="0" /></Field>
-        <Field label="Цена продажи, ₽"><input type="number" value={form.sell_price} onChange={e => set('sell_price', e.target.value)} placeholder="0" /></Field>
-      </div>
-      <div className="row mt-1">
-        <button onClick={onCancel}>Отмена</button>
-        <button className="primary flex-1" onClick={handleSave} disabled={saving || !form.name || !form.qty}>{saving ? 'Сохранение...' : 'Сохранить'}</button>
-      </div>
-    </div>
-  );
-}
-
 function WarehouseItemDetail({ item, onUpdate, onDelete, onBack }) {
   const [showSale, setShowSale] = useState(false);
   const [showReceive, setShowReceive] = useState(false);
-  const [saleQty, setSaleQty] = useState('');
+  const [saleItems, setSaleItems] = useState([]);
   const [saleNote, setSaleNote] = useState('');
+  const [saleQty, setSaleQty] = useState('');
   const [recQty, setRecQty] = useState('');
   const [recNote, setRecNote] = useState('');
   const [parsing, setParsing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [editingSell, setEditingSell] = useState(false);
+  const [sellPrice, setSellPrice] = useState(item.sell_price || '');
   const photoRef = useRef();
 
+  async function handleSaleInvoice(file) {
+    setParsing(true);
+    try {
+      const data = await parseInvoiceFile(file);
+      setSaleItems(data.items || []);
+      const keyword = item.name.toLowerCase().split(' ')[0];
+      const match = data.items?.find(i => i.name && i.name.toLowerCase().includes(keyword));
+      if (match?.qty) setSaleQty(String(match.qty));
+      setSaleNote('Продажа по накладной');
+    } catch {}
+    setParsing(false);
+  }
+
   async function handleSale() {
-    if (!saleQty || +saleQty > item.qty || +saleQty <= 0) return;
+    const qty = +saleQty;
+    if (!qty || qty > item.qty || qty <= 0) return;
     setSaving(true);
-    const updated = { ...item, qty: item.qty - +saleQty, moves: [...(item.moves || []), { date: new Date().toISOString(), type: 'out', qty: +saleQty, note: saleNote || 'Продажа' }] };
+    const updated = { ...item, qty: item.qty - qty, moves: [...(item.moves || []), { date: new Date().toISOString(), type: 'out', qty, note: saleNote || 'Продажа' }] };
     await apiFetch('/api/warehouse', { method: 'PUT', body: JSON.stringify(updated) });
-    onUpdate(updated); setShowSale(false); setSaleQty(''); setSaleNote(''); setSaving(false);
+    onUpdate(updated); setShowSale(false); setSaleQty(''); setSaleNote(''); setSaleItems([]); setSaving(false);
   }
 
   async function handleReceive() {
@@ -444,24 +324,17 @@ function WarehouseItemDetail({ item, onUpdate, onDelete, onBack }) {
     onUpdate(updated); setShowReceive(false); setRecQty(''); setRecNote(''); setSaving(false);
   }
 
-  async function handleSaleInvoice(file) {
-    setParsing(true);
-    try {
-      const data = await parseInvoiceFile(file);
-      const keyword = item.name.toLowerCase().split(' ')[0];
-      const match = data.items?.find(i => i.name && i.name.toLowerCase().includes(keyword));
-      if (match && match.qty) setSaleQty(String(match.qty));
-      setSaleNote('Из накладной о продаже');
-      setShowSale(true);
-    } catch {}
-    setParsing(false);
-  }
-
   async function handlePhoto(file) {
     const compressed = await compressPhoto(file);
     const updated = { ...item, photo: compressed };
     await apiFetch('/api/warehouse', { method: 'PUT', body: JSON.stringify(updated) });
     onUpdate(updated);
+  }
+
+  async function saveSellPrice() {
+    const updated = { ...item, sell_price: +sellPrice || 0 };
+    await apiFetch('/api/warehouse', { method: 'PUT', body: JSON.stringify(updated) });
+    onUpdate(updated); setEditingSell(false);
   }
 
   async function doDelete() {
@@ -470,13 +343,13 @@ function WarehouseItemDetail({ item, onUpdate, onDelete, onBack }) {
     onDelete();
   }
 
-  const qtyColor = item.qty === 0 ? '#fca5a5' : item.qty <= (item.min_qty || 5) ? '#FDE68A' : '#86EFAC';
+  const qtyColor = item.qty === 0 ? '#d93636' : item.qty <= (item.min_qty || 5) ? '#b45309' : '#15803d';
 
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: '1.5rem' }}>
         <button onClick={onBack} style={{ padding: '6px 10px' }}>← Назад</button>
-        <div style={{ flex: 1 }}><div style={{ fontSize: 18, fontWeight: 500 }}>{item.name}</div>{item.dimensions && <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>{item.dimensions}</div>}</div>
+        <div style={{ flex: 1 }}><div style={{ fontSize: 18, fontWeight: 600 }}>{item.name}</div>{item.dimensions && <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>{item.dimensions}</div>}</div>
         <div style={{ fontSize: 22, fontWeight: 700, color: qtyColor }}>{item.qty} {item.unit}</div>
       </div>
 
@@ -486,8 +359,8 @@ function WarehouseItemDetail({ item, onUpdate, onDelete, onBack }) {
           <button onClick={() => photoRef.current.click()} style={{ position: 'absolute', bottom: 8, right: 8, fontSize: 12 }}>📷 Изменить</button>
         </div>
       ) : (
-        <div onClick={() => photoRef.current.click()} style={{ border: '1.5px dashed rgba(255,255,255,0.3)', borderRadius: 12, padding: '1rem', textAlign: 'center', cursor: 'pointer', marginBottom: '1rem' }}>
-          📷 Добавить фото
+        <div onClick={() => photoRef.current.click()} style={{ border: '2px dashed #90c8e8', borderRadius: 12, padding: '1.2rem', textAlign: 'center', cursor: 'pointer', marginBottom: '1rem', background: '#f0f8ff' }}>
+          📷 Добавить фото товара
         </div>
       )}
       <input ref={photoRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => e.target.files[0] && handlePhoto(e.target.files[0])} />
@@ -495,30 +368,49 @@ function WarehouseItemDetail({ item, onUpdate, onDelete, onBack }) {
       <div className="grid-4 mb-1">
         <MetricCard label="На складе" value={`${item.qty} ${item.unit}`} cls={item.qty === 0 ? 'danger' : ''} />
         <MetricCard label="Себестоим./шт" value={item.cost_rub ? `${fmt(item.cost_rub)} ₽` : '—'} />
-        <MetricCard label="Цена продажи" value={item.sell_price ? `${fmt(item.sell_price)} ₽` : '—'} />
+        <div className="metric-card" style={{ cursor: 'pointer' }} onClick={() => setEditingSell(true)}>
+          <div className="metric-label">Цена продажи</div>
+          {editingSell ? (
+            <div style={{ display: 'flex', gap: 4 }}>
+              <input type="number" value={sellPrice} onChange={e => setSellPrice(e.target.value)} style={{ fontSize: 14, padding: '2px 6px' }} autoFocus />
+              <button className="primary" onClick={saveSellPrice} style={{ padding: '2px 8px', fontSize: 12 }}>✓</button>
+            </div>
+          ) : (
+            <div className="metric-value">{item.sell_price ? `${fmt(item.sell_price)} ₽` : <span style={{ fontSize: 14, color: '#0077B6' }}>+ Добавить</span>}</div>
+          )}
+        </div>
         <MetricCard label="Стоим. остатка" value={item.cost_rub && item.qty ? `${fmt(item.cost_rub * item.qty)} ₽` : '—'} />
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: '1rem' }}>
         {!showSale && !showReceive && (
           <>
-            <button className="primary" onClick={() => setShowSale(true)} style={{ width: '100%', justifyContent: 'center' }}>📤 Списать (продажа)</button>
-            <button onClick={() => setShowReceive(true)} style={{ width: '100%', justifyContent: 'center' }}>📥 Принять на склад</button>
+            <button className="primary" onClick={() => setShowSale(true)} style={{ width: '100%', justifyContent: 'center' }}>📤 Списать по накладной о продаже</button>
+            <button onClick={() => setShowReceive(true)} style={{ width: '100%', justifyContent: 'center' }}>📥 Принять дополнительно</button>
           </>
         )}
+
         {showSale && (
           <div className="card">
-            <div style={{ fontWeight: 500, marginBottom: 10 }}>Списание</div>
+            <div style={{ fontWeight: 600, marginBottom: 10 }}>Списание по накладной</div>
             <DropZone onFile={handleSaleInvoice} loading={parsing} label="Загрузить накладную о продаже" />
-            <div className="muted" style={{ fontSize: 12, textAlign: 'center', margin: '6px 0 10px' }}>или введите вручную</div>
-            <Field label={`Количество (на складе: ${item.qty})`}><input type="number" value={saleQty} onChange={e => setSaleQty(e.target.value)} max={item.qty} placeholder="0" /></Field>
+            {saleItems.length > 0 && (
+              <div className="info-box" style={{ marginTop: 8, fontSize: 12 }}>
+                📄 Найдено {saleItems.length} позиций — количество подставлено автоматически
+              </div>
+            )}
+            <div className="muted" style={{ fontSize: 12, textAlign: 'center', margin: '8px 0' }}>или введите вручную</div>
+            <Field label={`Количество (на складе: ${item.qty} ${item.unit})`}>
+              <input type="number" value={saleQty} onChange={e => setSaleQty(e.target.value)} max={item.qty} placeholder="0" />
+            </Field>
             <Field label="Комментарий"><input value={saleNote} onChange={e => setSaleNote(e.target.value)} placeholder="Продажа" /></Field>
-            <div className="row"><button onClick={() => setShowSale(false)}>Отмена</button><button className="primary flex-1" onClick={handleSale} disabled={saving || !saleQty || +saleQty > item.qty || +saleQty <= 0}>Списать</button></div>
+            <div className="row"><button onClick={() => { setShowSale(false); setSaleItems([]); }}>Отмена</button><button className="primary flex-1" onClick={handleSale} disabled={saving || !saleQty || +saleQty > item.qty || +saleQty <= 0}>Списать {saleQty} {item.unit}</button></div>
           </div>
         )}
+
         {showReceive && (
           <div className="card">
-            <div style={{ fontWeight: 500, marginBottom: 12 }}>Приход на склад</div>
+            <div style={{ fontWeight: 600, marginBottom: 12 }}>Дополнительный приход</div>
             <Field label="Количество"><input type="number" value={recQty} onChange={e => setRecQty(e.target.value)} placeholder="0" /></Field>
             <Field label="Комментарий"><input value={recNote} onChange={e => setRecNote(e.target.value)} placeholder="Поступление" /></Field>
             <div className="row"><button onClick={() => setShowReceive(false)}>Отмена</button><button className="primary flex-1" onClick={handleReceive} disabled={saving || !recQty}>Принять</button></div>
@@ -530,10 +422,10 @@ function WarehouseItemDetail({ item, onUpdate, onDelete, onBack }) {
         <div className="card mb-1">
           <div className="muted" style={{ fontSize: 12, fontWeight: 500, marginBottom: 8 }}>ИСТОРИЯ ДВИЖЕНИЙ</div>
           {[...item.moves].reverse().slice(0, 15).map((m, i, arr) => (
-            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, padding: '6px 0', borderBottom: i < arr.length - 1 ? '0.5px solid rgba(255,255,255,0.1)' : 'none' }}>
-              <div><span style={{ color: m.type === 'in' ? '#86EFAC' : '#fca5a5', marginRight: 8 }}>{m.type === 'in' ? '↑' : '↓'}</span>{m.note || (m.type === 'in' ? 'Поступление' : 'Списание')}</div>
+            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, padding: '6px 0', borderBottom: i < arr.length - 1 ? '1px solid #f0f0f0' : 'none' }}>
+              <div><span style={{ color: m.type === 'in' ? '#15803d' : '#d93636', marginRight: 8 }}>{m.type === 'in' ? '↑' : '↓'}</span>{m.note || (m.type === 'in' ? 'Поступление' : 'Списание')}</div>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ color: m.type === 'in' ? '#86EFAC' : '#fca5a5', fontWeight: 500 }}>{m.type === 'in' ? '+' : '-'}{m.qty} {item.unit}</div>
+                <div style={{ color: m.type === 'in' ? '#15803d' : '#d93636', fontWeight: 500 }}>{m.type === 'in' ? '+' : '-'}{m.qty} {item.unit}</div>
                 <div className="muted" style={{ fontSize: 11 }}>{new Date(m.date).toLocaleDateString('ru-RU')}</div>
               </div>
             </div>
@@ -565,15 +457,16 @@ export default function Home() {
   function updateShipment(u) { setShipments(s => s.map(x => x.id === u.id ? u : x)); }
   function updateWarehouseItem(u) { setWarehouse(w => w.map(x => x.id === u.id ? u : x)); }
 
-  if (loading) return <div className="container" style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14, paddingTop: '3rem' }}>Загрузка...</div>;
+  if (loading) return <div className="container" style={{ color: '#777', fontSize: 14, paddingTop: '3rem' }}>Загрузка...</div>;
 
   if (view === 'new-shipment') return <div className="container"><NewShipment onSave={s => { setShipments(p => [...p, s]); setView('list'); }} onCancel={() => setView('list')} /></div>;
+
   if (view === 'detail-shipment') {
     const s = shipments.find(s => s.id === selected);
     if (!s) { setView('list'); return null; }
-    return <div className="container"><ShipmentDetail shipment={s} onUpdate={updateShipment} onDelete={() => { setShipments(p => p.filter(x => x.id !== selected)); setView('list'); }} onBack={() => setView('list')} onAddToWarehouse={added => { setWarehouse(p => [...p, ...added]); setTab('warehouse'); setView('list'); }} /></div>;
+    return <div className="container"><ShipmentDetail shipment={s} onUpdate={updateShipment} onDelete={() => { setShipments(p => p.filter(x => x.id !== selected)); setView('list'); }} onBack={() => setView('list')} onWarehouseUpdate={added => { setWarehouse(p => [...p, ...added]); }} /></div>;
   }
-  if (view === 'new-warehouse') return <div className="container"><AddWarehouseItem onSave={i => { setWarehouse(p => [...p, i]); setView('list'); }} onCancel={() => setView('list')} /></div>;
+
   if (view === 'detail-warehouse') {
     const item = warehouse.find(i => i.id === selected);
     if (!item) { setView('list'); return null; }
@@ -586,26 +479,26 @@ export default function Home() {
     <div className="container">
       <div style={{ display: 'flex', background: 'rgba(0,119,182,0.08)', borderRadius: 10, padding: 3, marginBottom: '1.5rem' }}>
         {[['shipments', '🚢 Поставки'], ['warehouse', '📦 Склад']].map(([key, label]) => (
-          <button key={key} onClick={() => setTab(key)} style={{ flex: 1, justifyContent: 'center', border: 'none', borderRadius: 8, background: tab === key ? '#fff' : 'transparent', color: tab === key ? '#0077B6' : '#555', fontWeight: tab === key ? 500 : 400, padding: '8px 0' }}>{label}</button>
+          <button key={key} onClick={() => setTab(key)} style={{ flex: 1, justifyContent: 'center', border: 'none', borderRadius: 8, background: tab === key ? '#fff' : 'transparent', color: tab === key ? '#0077B6' : '#555', fontWeight: tab === key ? 600 : 400, padding: '8px 0', boxShadow: tab === key ? '0 2px 8px rgba(0,119,182,0.12)' : 'none' }}>{label}</button>
         ))}
       </div>
 
       {tab === 'shipments' && (
         <div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-            <div><div style={{ fontSize: 20, fontWeight: 500 }}>Поставки</div><div className="muted" style={{ fontSize: 13, marginTop: 2 }}>Китай → Россия</div></div>
+            <div><div style={{ fontSize: 22, fontWeight: 700 }}>Поставки</div><div className="muted" style={{ fontSize: 13, marginTop: 2 }}>Китай → Россия</div></div>
             <button className="primary" onClick={() => setView('new-shipment')}>+ Новая</button>
           </div>
           {shipments.length > 0 && (
             <div className="grid-4" style={{ marginBottom: '1.5rem' }}>
-              <MetricCard label="Поставок" value={shipments.length} />
+              <MetricCard label="Всего" value={shipments.length} />
               <MetricCard label="В пути" value={shipments.filter(s => s.status === 'transit').length} />
               <MetricCard label="Прибыло" value={shipments.filter(s => s.status === 'arrived').length} />
               <MetricCard label="Прибыль" value={`${totalProfit >= 0 ? '+' : ''}${fmt(totalProfit)} ₽`} cls={shipments.some(s => s.status === 'sold') ? (totalProfit >= 0 ? 'success' : 'danger') : ''} />
             </div>
           )}
           {shipments.length === 0 ? (
-            <div className="empty-state"><div style={{ fontSize: 40, marginBottom: '1rem' }}>📦</div><div style={{ fontSize: 15, fontWeight: 500, marginBottom: 6 }}>Поставок нет</div><div className="muted" style={{ fontSize: 13 }}>Нажмите «Новая» чтобы начать</div></div>
+            <div className="empty-state"><div style={{ fontSize: 48, marginBottom: '1rem' }}>📦</div><div style={{ fontSize: 16, fontWeight: 600, marginBottom: 6 }}>Поставок нет</div><div className="muted">Нажмите «Новая» чтобы начать</div></div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {[...shipments].reverse().map(s => {
@@ -614,14 +507,14 @@ export default function Home() {
                 const daysLeft = s.eta_date && s.status === 'transit' ? Math.ceil((new Date(s.eta_date) - new Date()) / 86400000) : null;
                 return (
                   <div key={s.id} className="card shipment-row" onClick={() => { setSelected(s.id); setView('detail-shipment'); }}>
-                    <div style={{ fontSize: 24 }}>📦</div>
+                    <div style={{ fontSize: 28 }}>📦</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: 500, fontSize: 15, marginBottom: 3 }}>{s.name}</div>
+                      <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 3 }}>{s.name}</div>
                       <div className="muted" style={{ fontSize: 12 }}>{s.total_cny ? `¥ ${fmt(s.total_cny)}` : ''}{s.items?.length ? ` · ${s.items.length} поз.` : ''}{daysLeft !== null ? ` · ${daysLeft > 0 ? `${daysLeft} дн.` : 'сегодня'}` : ''}{s.ship_date && !daysLeft ? ` · ${s.ship_date}` : ''}</div>
                     </div>
                     <div style={{ textAlign: 'right', flexShrink: 0 }}>
                       <Badge status={s.status} />
-                      {profit !== null && <div className={profit >= 0 ? 'success' : 'danger'} style={{ fontSize: 13, marginTop: 4, fontWeight: 500 }}>{profit >= 0 ? '+' : ''}{fmt(profit)} ₽</div>}
+                      {profit !== null && <div className={profit >= 0 ? 'success' : 'danger'} style={{ fontSize: 13, marginTop: 4, fontWeight: 600 }}>{profit >= 0 ? '+' : ''}{fmt(profit)} ₽</div>}
                     </div>
                   </div>
                 );
@@ -634,30 +527,29 @@ export default function Home() {
       {tab === 'warehouse' && (
         <div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-            <div><div style={{ fontSize: 20, fontWeight: 500 }}>Склад</div><div className="muted" style={{ fontSize: 13, marginTop: 2 }}>{warehouse.length} позиций</div></div>
-            <button className="primary" onClick={() => setView('new-warehouse')}>+ Товар</button>
+            <div><div style={{ fontSize: 22, fontWeight: 700 }}>Склад</div><div className="muted" style={{ fontSize: 13, marginTop: 2 }}>{warehouse.length} позиций</div></div>
           </div>
           {warehouse.length > 0 && (
             <div className="grid-4" style={{ marginBottom: '1.5rem' }}>
               <MetricCard label="Позиций" value={warehouse.length} />
-              <MetricCard label="Единиц всего" value={fmt(warehouse.reduce((s, i) => s + (i.qty || 0), 0))} />
+              <MetricCard label="Единиц" value={fmt(warehouse.reduce((s, i) => s + (i.qty || 0), 0))} />
               <MetricCard label="Мало" value={warehouse.filter(i => (i.qty||0) <= (i.min_qty||5) && (i.qty||0) > 0).length} cls={warehouse.filter(i => (i.qty||0) <= (i.min_qty||5) && (i.qty||0) > 0).length > 0 ? 'danger' : ''} />
-              <MetricCard label="Нет в наличии" value={warehouse.filter(i => (i.qty||0) === 0).length} cls={warehouse.filter(i => (i.qty||0) === 0).length > 0 ? 'danger' : ''} />
+              <MetricCard label="Нет" value={warehouse.filter(i => (i.qty||0) === 0).length} cls={warehouse.filter(i => (i.qty||0) === 0).length > 0 ? 'danger' : ''} />
             </div>
           )}
           {warehouse.length === 0 ? (
-            <div className="empty-state"><div style={{ fontSize: 40, marginBottom: '1rem' }}>🏪</div><div style={{ fontSize: 15, fontWeight: 500, marginBottom: 6 }}>Склад пуст</div><div className="muted" style={{ fontSize: 13 }}>Добавьте товар или импортируйте из поставки</div></div>
+            <div className="empty-state"><div style={{ fontSize: 48, marginBottom: '1rem' }}>🏪</div><div style={{ fontSize: 16, fontWeight: 600, marginBottom: 6 }}>Склад пуст</div><div className="muted">Когда груз прибудет — товары добавятся автоматически</div></div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(155px, 1fr))', gap: 12 }}>
               {warehouse.map(item => {
-                const qtyColor = item.qty === 0 ? '#fca5a5' : item.qty <= (item.min_qty || 5) ? '#FDE68A' : '#86EFAC';
+                const qtyColor = item.qty === 0 ? '#d93636' : item.qty <= (item.min_qty || 5) ? '#b45309' : '#15803d';
                 return (
                   <div key={item.id} onClick={() => { setSelected(item.id); setView('detail-warehouse'); }}
-                    style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 12, overflow: 'hidden', cursor: 'pointer' }}>
-                    {item.photo ? <img src={item.photo} alt={item.name} style={{ width: '100%', height: 130, objectFit: 'cover' }} /> : <div style={{ width: '100%', height: 130, background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 36 }}>📦</div>}
+                    style={{ background: '#fff', border: '1.5px solid #e0eef8', borderRadius: 12, overflow: 'hidden', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,119,182,0.06)', transition: 'all 0.15s' }}>
+                    {item.photo ? <img src={item.photo} alt={item.name} style={{ width: '100%', height: 130, objectFit: 'cover' }} /> : <div style={{ width: '100%', height: 130, background: '#f0f8ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 36 }}>📦</div>}
                     <div style={{ padding: '10px 12px' }}>
-                      <div style={{ fontWeight: 500, fontSize: 13, marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</div>
-                      <div style={{ fontSize: 14, color: qtyColor, fontWeight: 500 }}>{item.qty} {item.unit}</div>
+                      <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</div>
+                      <div style={{ fontSize: 14, color: qtyColor, fontWeight: 600 }}>{item.qty} {item.unit}</div>
                       {item.dimensions && <div className="muted" style={{ fontSize: 11, marginTop: 2 }}>{item.dimensions}</div>}
                     </div>
                   </div>
