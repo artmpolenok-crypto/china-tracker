@@ -337,6 +337,16 @@ function WarehouseItemDetail({ item, onUpdate, onDelete, onBack }) {
     onUpdate(updated); setEditingSell(false);
   }
 
+  const [editing, setEditing] = useState(false);
+  const [editForm, setEditForm] = useState({ name: item.name, dimensions: item.dimensions || '', unit: item.unit || 'шт', min_qty: item.min_qty || 5 });
+  const setE = (k, v) => setEditForm(f => ({ ...f, [k]: v }));
+
+  async function saveEdit() {
+    const updated = { ...item, ...editForm };
+    await apiFetch('/api/warehouse', { method: 'PUT', body: JSON.stringify(updated) });
+    onUpdate(updated); setEditing(false);
+  }
+
   async function doDelete() {
     if (!confirm('Удалить товар?')) return;
     await apiFetch('/api/warehouse', { method: 'DELETE', body: JSON.stringify({ id: item.id }) });
@@ -350,8 +360,34 @@ function WarehouseItemDetail({ item, onUpdate, onDelete, onBack }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: '1.5rem' }}>
         <button onClick={onBack} style={{ padding: '6px 10px' }}>← Назад</button>
         <div style={{ flex: 1 }}><div style={{ fontSize: 18, fontWeight: 600 }}>{item.name}</div>{item.dimensions && <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>{item.dimensions}</div>}</div>
-        <div style={{ fontSize: 22, fontWeight: 700, color: qtyColor }}>{item.qty} {item.unit}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ fontSize: 22, fontWeight: 700, color: qtyColor }}>{item.qty} {item.unit}</div>
+          <button onClick={() => setEditing(v => !v)} style={{ fontSize: 12, padding: '4px 10px', color: '#0077B6', borderColor: '#cce0f0' }}>{editing ? '✕' : '✏️ Изменить'}</button>
+        </div>
       </div>
+      {editing && (
+        <div className="card mb-1" style={{ borderColor: '#0077B6' }}>
+          <div style={{ fontWeight: 600, marginBottom: 12, color: '#0077B6' }}>Редактирование товара</div>
+          <Field label="Название"><input value={editForm.name} onChange={e => setE('name', e.target.value)} /></Field>
+          <div className="grid-2">
+            <Field label="Единица измерения">
+              <select value={editForm.unit} onChange={e => setE('unit', e.target.value)}>
+                <option>шт</option><option>кг</option><option>м</option><option>л</option><option>упак</option><option>пара</option><option>м²</option><option>м³</option>
+              </select>
+            </Field>
+            <Field label="Мин. остаток (уведомление)">
+              <input type="number" value={editForm.min_qty} onChange={e => setE('min_qty', +e.target.value)} placeholder="5" />
+            </Field>
+          </div>
+          <Field label="Размеры / объём / описание">
+            <input value={editForm.dimensions} onChange={e => setE('dimensions', e.target.value)} placeholder="Например: 11×8×6 см, 0.5 л, арт. MH0879" />
+          </Field>
+          <div className="row">
+            <button onClick={() => setEditing(false)}>Отмена</button>
+            <button className="primary flex-1" onClick={saveEdit}>Сохранить</button>
+          </div>
+        </div>
+      )}
 
       {item.photo ? (
         <div style={{ position: 'relative', marginBottom: '1rem' }}>
