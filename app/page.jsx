@@ -574,6 +574,7 @@ export default function Home() {
   const [warehouse, setWarehouse] = useState([]);
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(true);
+const [filter, setFilter] = useState('all');
 
   useEffect(() => {
     Promise.all([
@@ -625,11 +626,18 @@ export default function Home() {
               <MetricCard label="Прибыль" value={`${totalProfit >= 0 ? '+' : ''}${fmt(totalProfit)} ₽`} cls={shipments.some(s => s.status === 'sold') ? (totalProfit >= 0 ? 'success' : 'danger') : ''} />
             </div>
           )}
-          {shipments.length === 0 ? (
+          {shipments.length > 0 && (
+<div style={{ display: 'flex', gap: 6, marginBottom: '1rem', flexWrap: 'wrap' }}>
+{[['all', 'Все'], ['new', 'Новые'], ['transit', 'В пути'], ['arrived', 'Прибыли'], ['sold', 'Проданы']].map(([key, label]) => (
+<button key={key} onClick={() => setFilter(key)} style={{ padding: '5px 12px', fontSize: 13, borderRadius: 20, border: '1.5px solid', borderColor: filter === key ? '#0077B6' : '#d1d0c9', background: filter === key ? '#0077B6' : '#fff', color: filter === key ? '#fff' : '#555', fontWeight: filter === key ? 600 : 400 }}>{label}{key !== 'all' ? ' (' + shipments.filter(s => s.status === key).length + ')' : ''}</button>
+))}
+</div>
+)}
+{shipments.length === 0 ? (
             <div className="empty-state"><div style={{ fontSize: 48, marginBottom: '1rem' }}>📦</div><div style={{ fontSize: 16, fontWeight: 600, marginBottom: 6 }}>Поставок нет</div><div className="muted">Нажмите «Новая» чтобы начать</div></div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {[...shipments].reverse().map(s => {
+              {[...shipments].filter(s => filter === 'all' || s.status === filter).reverse().map(s => {
                 const cost = (s.paid_rub || 0) + (s.extra_paid_rub || 0) + (s.delivery_rub || 0);
                 const profit = s.status === 'sold' ? (s.sale_price_rub || 0) - (s.usn_tax || 0) - cost : null;
                 const daysLeft = s.eta_date && s.status === 'transit' ? Math.ceil((new Date(s.eta_date) - new Date()) / 86400000) : null;
