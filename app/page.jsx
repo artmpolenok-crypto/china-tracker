@@ -91,7 +91,7 @@ const expCNY=(d.items||[]).filter(i=>isExp(i.name)).reduce((s,i)=>s+(i.total_cny
   async function handleSave() {
     setSaving(true);
     const totalCNY = +form.total_cny || form.items.reduce((s, i) => s + (i.total_cny || 0), 0);
-    const shipment = { id: genId(), createdAt: new Date().toISOString(), status: form.ship_date ? 'transit' : 'new', name: form.name || `Поставка ${new Date().toLocaleDateString('ru-RU')}`, items: form.items, total_cny: totalCNY, invoice_number: form.invoice_number, supplier: form.supplier, cny_rate: +form.cny_rate || 0, paid_rub: +form.paid_rub || 0, ship_date: form.ship_date, eta_date: form.eta_date, extra_paid_rub: form._expense_cny && form.cny_rate ? Math.round(form._expense_cny * +form.cny_rate) : 0, delivery_rub: 0, sale_price_rub: 0 };
+    const shipment = { id: genId(), createdAt: new Date().toISOString(), status: form.ship_date ? 'transit' : 'new', name: form.name || `Поставка ${new Date().toLocaleDateString('ru-RU')}`, items: form.items, total_cny: totalCNY, invoice_number: form.invoice_number, supplier: form.supplier, cny_rate: +form.cny_rate || 0, paid_rub: +form.paid_rub || 0, ship_date: form.ship_date, eta_date: form.eta_date, extra_paid_rub: 0, delivery_rub: 0, sale_price_rub: 0 };
     await apiFetch('/api/shipments', { method: 'POST', body: JSON.stringify(shipment) });
     onSave(shipment); setSaving(false);
   }
@@ -150,7 +150,7 @@ const expCNY=(d.items||[]).filter(i=>isExp(i.name)).reduce((s,i)=>s+(i.total_cny
               {form.cny_rate && <Row label="Курс" value={`${form.cny_rate} ₽/¥`} />}
               {form.paid_rub && <Row label="Оплачено" value={`${fmt(+form.paid_rub)} ₽`} />}
               {form.ship_date && <Row label="Отправлено" value={form.ship_date} />}
-{form._expense_cny > 0 && form.cny_rate && <Row label="Доставка/упаковка из накладной ✅" value={`· ${fmt(form._expense_cny)} → ${fmt(Math.round(form._expense_cny * +form.cny_rate))} ₽`} />}
+
             </tbody></table>
             {form.items.length > 0 && <><hr className="divider" /><div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>Позиции ({form.items.length}):</div>{form.items.slice(0,4).map((item,i) => (<div key={i} style={{ fontSize: 12, display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}><span>{item.name}</span><span className="muted">×{item.qty}</span></div>))}</>}
           </div>
@@ -202,7 +202,20 @@ function ShipmentDetail({ shipment, onUpdate, onDelete, onBack, onWarehouseUpdat
         qty: item.qty,
         unit: 'шт',
         dimensions: '',
-        cost_rub: shipment.cny_rate > 0 && item.unit_price_cny ? Math.round(item.unit_price_cny * shipment.cny_rate) : 0,
+        cost_rub: (() => {
+const baseRate = shipment.cny_rate > 0 ? shipment.cny_rate : 0;
+const baseCost = item.unit_price_cny ? item.unit_price_cny * baseRate : 0;
+// Distribute expenses proportionally by item value
+const expKw = ['доставка','упаковка','поддон','транспорт','фрахт','тара','паллет','пломба','страховка','运费','木托','包装','配送'];
+const isExp = (n) => expKw.some(k => (n||'').toLowerCase().includes(k.toLowerCase()));
+const goodsItems = shipment.items.filter(i => !isExp(i.name));
+const expenseItems = shipment.items.filter(i => isExp(i.name));
+const totalGoodsCNY = goodsItems.reduce((s, i) => s + (i.total_cny || 0), 0);
+const totalExpenseCNY = expenseItems.reduce((s, i) => s + (i.total_cny || 0), 0);
+const itemShare = totalGoodsCNY > 0 ? (item.total_cny || 0) / totalGoodsCNY : 0;
+const expensePerUnit = item.qty > 0 ? (itemShare * totalExpenseCNY * baseRate) / item.qty : 0;
+return Math.round(baseCost + expensePerUnit);
+})(),
         sell_price: 0,
         photo: null,
         min_qty: 5,
