@@ -535,6 +535,7 @@ export default function Home() {
               <MetricCard label="Единиц" value={fmt(warehouse.reduce((s, i) => s + (i.qty || 0), 0))} />
               <MetricCard label="Мало" value={warehouse.filter(i => (i.qty||0) <= (i.min_qty||5) && (i.qty||0) > 0).length} cls={warehouse.filter(i => (i.qty||0) <= (i.min_qty||5) && (i.qty||0) > 0).length > 0 ? 'danger' : ''} />
               <MetricCard label="Нет" value={warehouse.filter(i => (i.qty||0) === 0).length} cls={warehouse.filter(i => (i.qty||0) === 0).length > 0 ? 'danger' : ''} />
+              <MetricCard label="Сумма (продажи)" value={`${fmt(warehouse.reduce((s, i) => s + ((i.sell_price || 0) * (i.qty || 0)), 0))} ₽`} />
             </div>
           )}
           {warehouse.length === 0 ? (
