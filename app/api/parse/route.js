@@ -2,15 +2,26 @@ import Anthropic from '@anthropic-ai/sdk';
 
 const client = new Anthropic();
 
-const PROMPT = `Parse this invoice/packing list from a Chinese supplier and translate all text to Russian.
-Return ONLY valid JSON, no markdown, no preamble:
-{"items":[{"name":"название на русском","qty":0,"unit_price_cny":0,"total_cny":0}],"total_cny":0,"invoice_number":null,"supplier":null}
+const PROMPT = `Parse this invoice/packing list from a Chinese supplier.
+Translate ALL item names to Russian.
+Separate GOODS (products going to warehouse) from EXPENSES (delivery, packaging, pallets, insurance etc).
+
+Return ONLY valid JSON, no markdown:
+{
+  "items": [{"name":"название товара на русском","qty":0,"unit_price_cny":0,"total_cny":0,"is_expense":false}],
+  "expenses": [{"name":"название расхода на русском","total_cny":0}],
+  "total_cny": 0,
+  "invoice_number": null,
+  "supplier": null
+}
+
 Rules:
-- Translate ALL item names to Russian
-- qty must be the actual quantity number
-- All prices must be numeric
-- If total_cny is missing, sum all items
-- supplier should be the company name as-is`;
+- is_expense=true for: delivery/shipping (运费), packaging (包装), pallets (木托), insurance, any service fees
+- is_expense=false for actual physical goods
+- qty = actual quantity number
+- All numbers must be numeric
+- If total_cny missing, sum all items + expenses
+- supplier = company name as-is`;
 
 function getMimeType(file) {
   if (file.type && file.type !== 'application/octet-stream') return file.type;
@@ -56,9 +67,20 @@ export async function POST(request) {
 
     const raw = response.content.map(b => b.text || '').join('');
     const parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
+    
+    // Move expense items to expenses array if not already separated
+    if (parsed.items) {
+      const expenseKeywords = ['доставка', 'упаковка', 'поддон', 'транспорт', 'фрахт', 'тара', 'паллет', 'страховка', '运费', '木托', '包装'];
+      const isExp = (name) => expenseKeywords.some(k => name?.toLowerCase().includes(k.toLowerCase()));
+      
+      if (!parsed.expenses) parsed.expenses = [];
+      const expFromItems = parsed.items.filter(i => i.is_expense || isExp(i.name));
+      const goodsOnly = parsed.items.filter(i => !i.is_expense && !isExp(i.name));
+      
+      expFromItems.forEach(e => parsed.expenses.push({ name: e.name, total_cny: e.total_cny || 0 }));
+      parsed.items = goodsOnly;
+    }
+    
     return Response.json(parsed);
   } catch (e) {
     console.error('Parse error:', e);
-    return Response.json({ error: e.message }, { status: 500 });
-  }
-}
