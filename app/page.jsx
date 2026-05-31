@@ -584,9 +584,9 @@ export default function Home() {
 
   return (
     <div className="container">
-      <div style={{ display: 'flex', background: 'rgba(255,255,255,0.1)', borderRadius: 10, padding: 3, marginBottom: '1.5rem' }}>
+      <div style={{ display: 'flex', background: 'rgba(0,119,182,0.08)', borderRadius: 10, padding: 3, marginBottom: '1.5rem' }}>
         {[['shipments', '🚢 Поставки'], ['warehouse', '📦 Склад']].map(([key, label]) => (
-          <button key={key} onClick={() => setTab(key)} style={{ flex: 1, justifyContent: 'center', border: 'none', borderRadius: 8, background: tab === key ? 'rgba(255,255,255,0.9)' : 'transparent', color: tab === key ? '#0F4C75' : 'rgba(255,255,255,0.8)', fontWeight: tab === key ? 500 : 400, padding: '8px 0' }}>{label}</button>
+          <button key={key} onClick={() => setTab(key)} style={{ flex: 1, justifyContent: 'center', border: 'none', borderRadius: 8, background: tab === key ? '#fff' : 'transparent', color: tab === key ? '#0077B6' : '#555', fontWeight: tab === key ? 500 : 400, padding: '8px 0' }}>{label}</button>
         ))}
       </div>
 
