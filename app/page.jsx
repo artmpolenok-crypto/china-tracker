@@ -323,7 +323,7 @@ return Math.round(baseCost + expensePerUnit);
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {shipment.status === 'new' && <button className="primary" onClick={() => save({ ...shipment, status: 'transit' })} disabled={saving} style={{ width: '100%', justifyContent: 'center' }}><IconTruck size={18} /> Отправлено — в пути</button>}
         {shipment.status === 'transit' && !showArrival && (
-          <button className="primary" onClick={() => setShowArrival(true)} style={{ width: '100%', justifyContent: 'center' }}><IconBox size={18} /> Груз прибыл → на склад</button>
+          <button className="secondary-gradient" onClick={() => setShowArrival(true)} style={{ width: '100%', justifyContent: 'center' }}><IconBox size={18} /> Груз прибыл → на склад</button>
         )}
         {showArrival && (
           <div className="card">
@@ -483,7 +483,7 @@ if (updated.shipment_id) {
         <div style={{ flex: 1 }}><div style={{ fontSize: 18, fontWeight: 600 }}>{item.name}</div>{item.dimensions && <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>{item.dimensions}</div>}</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{ fontSize: 22, fontWeight: 700, color: qtyColor }}>{item.qty} {item.unit}</div>
-          <button onClick={() => setEditing(v => !v)} style={{ fontSize: 12, padding: '4px 10px', color: '#0077B6', borderColor: '#cce0f0' }}>{editing ? '✕' : '✏️ Изменить'}</button>
+          <button onClick={() => setEditing(v => !v)} style={{ fontSize: 12, padding: '4px 10px', color: '#0077B6', borderColor: '#cce0f0' }}>{editing ? '✕' : <><IconEdit size={14} /> Изменить</>}</button>
         </div>
       </div>
       {editing && (
@@ -513,7 +513,7 @@ if (updated.shipment_id) {
       {item.photo ? (
         <div style={{ position: 'relative', marginBottom: '1rem' }}>
           <img src={item.photo} alt={item.name} style={{ width: '100%', maxHeight: 220, objectFit: 'cover', borderRadius: 12 }} />
-          <button onClick={() => photoRef.current.click()} style={{ position: 'absolute', bottom: 8, right: 8, fontSize: 12 }}>📷 Изменить</button>
+          <button onClick={() => photoRef.current.click()} style={{ position: 'absolute', bottom: 8, right: 8, fontSize: 12 }}><IconCamera size={14} /> Изменить</button>
         </div>
       ) : (
         <div onClick={() => photoRef.current.click()} style={{ border: '2px dashed #90c8e8', borderRadius: 12, padding: '1.2rem', textAlign: 'center', cursor: 'pointer', marginBottom: '1rem', background: '#f0f8ff' }}>
@@ -715,14 +715,11 @@ document.removeEventListener('touchend', onTouchEnd);
   return (
     <div className="container">
       {refreshing && <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999, background: '#0077B6', height: 3, animation: 'none' }}><div style={{ height: '100%', background: '#48CAE4', width: '60%', borderRadius: 2 }} /></div>}
-<div className="tab-bar">
-<button onClick={() => setTab('shipments')} className={tab === 'shipments' ? 'active' : ''}><IconShip size={16} /> Поставки</button>
-<button onClick={() => setTab('warehouse')} className={tab === 'warehouse' ? 'active' : ''}><IconBox size={16} /> Склад</button>
-</div>
+
 
       {showProfit && (
-<div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'flex-end' }} onClick={() => setShowProfit(false)}>
-<div style={{ background: '#fff', borderRadius: '16px 16px 0 0', padding: '1.5rem', width: '100%', maxHeight: '80vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
+<div className="profit-modal-bg" onClick={() => setShowProfit(false)}>
+<div className="profit-modal" onClick={e => e.stopPropagation()}>
 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.2rem' }}>
 <div style={{ fontSize: 18, fontWeight: 700 }}>Прибыль по партиям</div>
 <button onClick={() => setShowProfit(false)} style={{ border: 'none', background: 'none', fontSize: 20, cursor: 'pointer' }}>✕</button>
@@ -733,7 +730,7 @@ const tax = s.usn_tax || Math.round((s.sale_price_rub||0) * 0.06);
 const profit = (s.sale_price_rub||0) - tax - cost;
 const perPerson = Math.round(profit / 2);
 return (
-<div key={s.id} style={{ background: '#f8fafc', borderRadius: 12, padding: '1rem', marginBottom: 10, border: '1px solid #e0eef8' }}>
+<div key={s.id} className="profit-card">
 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
 <div>
 <div style={{ fontWeight: 600, fontSize: 15 }}>{s.name}</div>
@@ -742,7 +739,7 @@ return (
 <div style={{ fontWeight: 700, fontSize: 16, color: profit >= 0 ? '#15803d' : '#d93636' }}>{profit >= 0 ? '+' : ''}{fmt(profit)} ₽</div>
 </div>
 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}><tbody>
-<tr><td style={{ color: '#888', paddingBottom: 4 }}>Выручка</td><td style={{ textAlign: 'right', paddingBottom: 4 }}>{fmt(s.sale_price_rub)} ₽</td></tr>
+<tr><td style={{ color: 'rgba(255,255,255,0.5)', paddingBottom: 4 }}>Выручка</td><td style={{ textAlign: 'right', paddingBottom: 4 }}>{fmt(s.sale_price_rub)} ₽</td></tr>
 <tr><td style={{ color: '#888', paddingBottom: 4 }}>Себестоимость</td><td style={{ textAlign: 'right', color: '#d93636', paddingBottom: 4 }}>-{fmt(cost)} ₽</td></tr>
 <tr><td style={{ color: '#888', paddingBottom: 4 }}>Налог УСН 6%</td><td style={{ textAlign: 'right', color: '#d93636', paddingBottom: 4 }}>-{fmt(tax)} ₽</td></tr>
 <tr style={{ borderTop: '1px solid #e0eef8' }}>
@@ -753,7 +750,7 @@ return (
 </div>
 );
 })}
-<div style={{ background: 'linear-gradient(135deg,#0077B6,#48CAE4)', borderRadius: 12, padding: '1rem', color: '#fff', marginTop: 8 }}>
+<div className="profit-total">
 <div style={{ fontSize: 13, opacity: 0.85, marginBottom: 6 }}>Итого по всем партиям</div>
 {(() => {
 const sold = shipments.filter(s => s.status === 'sold');
@@ -776,6 +773,16 @@ return (
 </div>
 </div>
 )}
+<nav className="bottom-nav">
+<button onClick={() => setTab('shipments')} className={tab === 'shipments' ? 'active' : ''}>
+<IconShip size={22} />
+<span>Поставки</span>
+</button>
+<button onClick={() => setTab('warehouse')} className={tab === 'warehouse' ? 'active' : ''}>
+<IconBox size={22} />
+<span>Склад</span>
+</button>
+</nav>
 {tab === 'shipments' && (
         <div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
