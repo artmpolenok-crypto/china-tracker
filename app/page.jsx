@@ -350,7 +350,7 @@ return Math.round(baseCost + expensePerUnit);
               const profit = netRevenue - cost;
               const perPerson = Math.round(profit / 2);
               return (
-                <div className="card" style={{ background: '#f0f8ff', marginBottom: 12, fontSize: 13 }}>
+                <div className="card" style={{ background: 'rgba(0,119,182,0.08)', marginBottom: 12, fontSize: 13 }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <tbody>
                       <tr><td className="muted">Выручка</td><td style={{ textAlign: 'right' }}>{fmt(revenue)} ₽</td></tr>
@@ -512,11 +512,11 @@ if (updated.shipment_id) {
 
       {item.photo ? (
         <div style={{ position: 'relative', marginBottom: '1rem' }}>
-          <img src={item.photo} alt={item.name} style={{ width: '100%', maxHeight: 220, objectFit: 'cover', borderRadius: 12 }} />
+          <img src={item.photo} alt={item.name} style={{ width: '100%', maxHeight: 220, objectFit: 'cover', borderRadius: 16 }} />
           <button onClick={() => photoRef.current.click()} style={{ position: 'absolute', bottom: 8, right: 8, fontSize: 12 }}><IconCamera size={14} /> Изменить</button>
         </div>
       ) : (
-        <div onClick={() => photoRef.current.click()} style={{ border: '2px dashed #90c8e8', borderRadius: 12, padding: '1.2rem', textAlign: 'center', cursor: 'pointer', marginBottom: '1rem', background: '#f0f8ff' }}>
+        <div onClick={() => photoRef.current.click()} style={{ border: '1.5px dashed rgba(72,202,228,0.3)', borderRadius: 16, padding: '1.2rem', textAlign: 'center', cursor: 'pointer', marginBottom: '1rem', background: 'rgba(0,119,182,0.06)' }}>
           <span style={{ color: "rgba(255,255,255,0.4)" }}><IconCamera size={24} /></span><span style={{ display: "block", marginTop: 8, fontSize: 13, color: "rgba(255,255,255,0.4)" }}>Добавить фото</span>
         </div>
       )}
@@ -798,7 +798,7 @@ return (
               <MetricCard label="В пути" value={shipments.filter(s => s.status === 'transit').length} />
               <MetricCard label="Прибыло" value={shipments.filter(s => s.status === 'arrived').length} />
               <div className="metric-card" style={{ cursor: shipments.some(s => s.status === 'sold') ? 'pointer' : 'default' }} onClick={() => shipments.some(s => s.status === 'sold') && setShowProfit(true)}>
-<div className="metric-label">Прибыль {shipments.some(s => s.status === 'sold') && <span style={{fontSize:10}}>↗️</span>}</div>
+<div className="metric-label">Прибыль {shipments.some(s => s.status === 'sold') && <IconChart size={11} color="#48CAE4" />}</div>
 <div className={`metric-value ${shipments.some(s => s.status === 'sold') ? (totalProfit >= 0 ? 'success' : 'danger') : ''}`}>{totalProfit >= 0 ? '+' : ''}{fmt(totalProfit)} ₽</div>
 </div>
             </div>
