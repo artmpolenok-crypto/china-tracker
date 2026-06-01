@@ -1,7 +1,9 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&display=swap');
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+  font-family: 'Century Gothic', 'Futura', 'Gill Sans', 'Trebuchet MS', 'Nunito', sans-serif;
   background: #060b18;
   color: #e8eeff;
   min-height: 100vh;
