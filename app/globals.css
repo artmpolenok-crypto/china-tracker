@@ -194,7 +194,7 @@ button:disabled { opacity: 0.3; cursor: default; transform: none !important; box
   backdrop-filter: blur(30px);
   -webkit-backdrop-filter: blur(30px);
   border-top: 1px solid rgba(255,255,255,0.07);
-  padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+  padding: 10px 12px 34px;
   z-index: 100;
   gap: 10px;
 }
