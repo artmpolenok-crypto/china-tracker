@@ -190,29 +190,33 @@ button:disabled { opacity: 0.3; cursor: default; transform: none !important; box
   left: 0;
   right: 0;
   display: flex;
-  background: rgba(8,13,26,0.85);
+  background: rgba(6,11,24,0.92);
   backdrop-filter: blur(30px);
   -webkit-backdrop-filter: blur(30px);
-  border-top: 1px solid rgba(255,255,255,0.08);
-  padding: 8px 16px calc(8px + env(safe-area-inset-bottom));
+  border-top: 1px solid rgba(255,255,255,0.07);
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
   z-index: 100;
-  gap: 8px;
+  gap: 10px;
 }
 .bottom-nav button {
   flex: 1;
-  border-radius: 14px;
+  border-radius: 18px;
   border: none;
-  padding: 12px 8px;
+  padding: 14px 8px;
   font-size: 12px;
-  font-weight: 500;
-  gap: 5px;
+  font-weight: 600;
+  gap: 6px;
   flex-direction: column;
   background: transparent;
-  color: rgba(255,255,255,0.4);
+  color: rgba(255,255,255,0.3);
+  letter-spacing: 0.3px;
+  transition: all 0.2s;
 }
 .bottom-nav button.active {
-  background: rgba(0,119,182,0.15);
-  color: #48CAE4;
+  background: linear-gradient(135deg, rgba(0,119,182,0.5) 0%, rgba(72,202,228,0.3) 100%);
+  color: #ffffff;
+  border: 1px solid rgba(72,202,228,0.3);
+  box-shadow: 0 4px 20px rgba(0,119,182,0.3), inset 0 1px 0 rgba(255,255,255,0.1);
 }
 
 /* ── GRIDS ── */
