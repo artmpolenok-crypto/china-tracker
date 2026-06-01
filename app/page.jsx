@@ -6,6 +6,21 @@ function genId() { return Date.now().toString(36) + Math.random().toString(36).s
 function fmt(n) { if (!n && n !== 0) return '—'; return Math.round(n).toLocaleString('ru-RU'); }
 function fmtF(n, d = 2) { if (!n && n !== 0) return '—'; return (+n).toFixed(d); }
 
+// ─── SVG ICONS ───────────────────────────────────────────────────────────────
+const IconBox = ({size=22,color="currentColor"}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>;
+const IconShip = ({size=22,color="currentColor"}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M2 21c.6.5 1.2 1 2.5 1C7 22 7 21 9.5 21s2.5 1 5 1 2.5-1 5-1c1.3 0 1.9.5 2.5 1"/><path d="M19.38 20A11.6 11.6 0 0 0 21 14l-9-4-9 4c0 3.2 2 6.5 4.62 8"/><path d="M19 13V7.58a2 2 0 0 0-1.28-1.87L12 3.58 6.28 5.71A2 2 0 0 0 5 7.58V13"/><line x1="12" y1="3.58" x2="12" y2="12"/></svg>;
+const IconMoney = ({size=22,color="currentColor"}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>;
+const IconTrash = ({size=18,color="currentColor"}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>;
+const IconEdit = ({size=16,color="currentColor"}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>;
+const IconBack = ({size=18,color="currentColor"}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>;
+const IconCamera = ({size=28,color="currentColor"}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>;
+const IconRefresh = ({size=18,color="currentColor"}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>;
+const IconDoc = ({size=28,color="currentColor"}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>;
+const IconTruck = ({size=20,color="currentColor"}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>;
+const IconArrowDown = ({size=18,color="currentColor"}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>;
+const IconArrowUp = ({size=18,color="currentColor"}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>;
+const IconChart = ({size=18,color="currentColor"}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>;
+
 async function apiFetch(url, options = {}) {
   const r = await fetch(url, { headers: { 'Content-Type': 'application/json' }, ...options });
   return r.json();
@@ -59,7 +74,7 @@ function DropZone({ onFile, loading, label }) {
       onClick={() => !loading && ref.current.click()}
       className={`drop-zone${drag ? ' drag' : ''}`}>
       <input ref={ref} type="file" accept=".pdf,.png,.jpg,.jpeg,.xlsx,.xls,.csv" style={{ display: 'none' }} onChange={e => e.target.files[0] && onFile(e.target.files[0])} />
-      <div style={{ fontSize: 28, marginBottom: 6 }}>📄</div>
+      <div style={{ marginBottom: 8, color: "rgba(255,255,255,0.4)" }}><IconDoc size={32} /></div>
       {loading ? <div className="muted">Распознаём...</div> : <><div style={{ fontWeight: 500, marginBottom: 4 }}>{label || 'Загрузите накладную'}</div><div className="muted" style={{ fontSize: 12 }}>PDF · Фото · Excel</div></>}
     </div>
   );
@@ -101,7 +116,7 @@ const expCNY=(d.items||[]).filter(i=>isExp(i.name)).reduce((s,i)=>s+(i.total_cny
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: '1.5rem' }}>
-        <button onClick={onCancel} style={{ padding: '6px 10px' }}>← Назад</button>
+        <button onClick={onCancel} style={{ padding: '6px 10px' }}><IconBack size={16} /> Назад</button>
         <div style={{ fontSize: 18, fontWeight: 600 }}>Новая поставка</div>
       </div>
       <div className="step-bar">
@@ -246,7 +261,7 @@ return Math.round(baseCost + expensePerUnit);
         <div style={{ flex: 1 }}><div style={{ fontSize: 18, fontWeight: 600 }}>{shipment.name}</div><div className="muted" style={{ fontSize: 12, marginTop: 2 }}>Создан {new Date(shipment.createdAt).toLocaleDateString('ru-RU')}</div></div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <Badge status={shipment.status} />
-          <button onClick={() => setShowEdit(v => !v)} style={{ fontSize: 12, padding: '4px 10px', color: '#0077B6', borderColor: '#cce0f0' }}>{showEdit ? '✕' : '✏️'}</button>
+          <button onClick={() => setShowEdit(v => !v)} style={{ fontSize: 12, padding: '4px 10px', color: '#0077B6', borderColor: '#cce0f0' }}>{showEdit ? '✕' : <IconEdit size={15} />}</button>
         </div>
       </div>
       {showEdit && (
@@ -306,9 +321,9 @@ return Math.round(baseCost + expensePerUnit);
         </div>
       )}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {shipment.status === 'new' && <button className="primary" onClick={() => save({ ...shipment, status: 'transit' })} disabled={saving} style={{ width: '100%', justifyContent: 'center' }}>🚛 Отправлено — в пути</button>}
+        {shipment.status === 'new' && <button className="primary" onClick={() => save({ ...shipment, status: 'transit' })} disabled={saving} style={{ width: '100%', justifyContent: 'center' }}><IconTruck size={18} /> Отправлено — в пути</button>}
         {shipment.status === 'transit' && !showArrival && (
-          <button className="primary" onClick={() => setShowArrival(true)} style={{ width: '100%', justifyContent: 'center' }}>📦 Груз прибыл → добавить на склад</button>
+          <button className="primary" onClick={() => setShowArrival(true)} style={{ width: '100%', justifyContent: 'center' }}><IconBox size={18} /> Груз прибыл → на склад</button>
         )}
         {showArrival && (
           <div className="card">
@@ -322,7 +337,7 @@ return Math.round(baseCost + expensePerUnit);
             <div className="row"><button onClick={() => setShowArrival(false)}>Отмена</button><button className="primary flex-1" onClick={doArrival} disabled={saving}>{saving ? 'Добавляем на склад...' : 'Подтвердить прибытие'}</button></div>
           </div>
         )}
-        {shipment.status === 'arrived' && !showSale && <button className="primary" onClick={() => setShowSale(true)} style={{ width: '100%', justifyContent: 'center' }}>💰 Указать продажную цену</button>}
+        {shipment.status === 'arrived' && !showSale && <button className="primary" onClick={() => setShowSale(true)} style={{ width: '100%', justifyContent: 'center' }}><IconMoney size={18} /> Указать продажную цену</button>}
         {showSale && (
           <div className="card">
             <div style={{ fontWeight: 600, marginBottom: 12 }}>Продажа</div>
@@ -351,7 +366,7 @@ return Math.round(baseCost + expensePerUnit);
             <div className="row"><button onClick={() => setShowSale(false)}>Отмена</button><button className="primary flex-1" onClick={doSale} disabled={saving}>Сохранить</button></div>
           </div>
         )}
-        <button className="danger" onClick={doDelete} style={{ marginTop: 4 }}>🗑 Удалить поставку</button>
+        <button className="danger" onClick={doDelete} style={{ marginTop: 4 }}><IconTrash size={16} /> Удалить поставку</button>
       </div>
     </div>
   );
@@ -502,7 +517,7 @@ if (updated.shipment_id) {
         </div>
       ) : (
         <div onClick={() => photoRef.current.click()} style={{ border: '2px dashed #90c8e8', borderRadius: 12, padding: '1.2rem', textAlign: 'center', cursor: 'pointer', marginBottom: '1rem', background: '#f0f8ff' }}>
-          📷 Добавить фото товара
+          <span style={{ color: "rgba(255,255,255,0.4)" }}><IconCamera size={24} /></span><span style={{ display: "block", marginTop: 8, fontSize: 13, color: "rgba(255,255,255,0.4)" }}>Добавить фото</span>
         </div>
       )}
       <input ref={photoRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => e.target.files[0] && handlePhoto(e.target.files[0])} />
@@ -527,8 +542,8 @@ if (updated.shipment_id) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: '1rem' }}>
         {!showSale && !showReceive && (
           <>
-            <button className="primary" onClick={() => setShowSale(true)} style={{ width: '100%', justifyContent: 'center' }}>📤 Списать по накладной о продаже</button>
-            <button onClick={() => setShowReceive(true)} style={{ width: '100%', justifyContent: 'center' }}>📥 Принять дополнительно</button>
+            <button className="primary" onClick={() => setShowSale(true)} style={{ width: '100%', justifyContent: 'center' }}><IconArrowDown size={18} /> Списать по накладной</button>
+            <button onClick={() => setShowReceive(true)} style={{ width: '100%', justifyContent: 'center' }}><IconArrowUp size={18} /> Принять дополнительно</button>
           </>
         )}
 
@@ -584,7 +599,7 @@ if (updated.shipment_id) {
           ))}
         </div>
       )}
-      <button className="danger" onClick={doDelete} style={{ width: '100%', justifyContent: 'center', marginTop: 4 }}>🗑 Удалить товар</button>
+      <button className="danger" onClick={doDelete} style={{ width: '100%', justifyContent: 'center', marginTop: 4 }}><IconTrash size={16} /> Удалить товар</button>
     </div>
   );
 }
@@ -700,11 +715,10 @@ document.removeEventListener('touchend', onTouchEnd);
   return (
     <div className="container">
       {refreshing && <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999, background: '#0077B6', height: 3, animation: 'none' }}><div style={{ height: '100%', background: '#48CAE4', width: '60%', borderRadius: 2 }} /></div>}
-<div style={{ display: 'flex', background: 'rgba(0,119,182,0.08)', borderRadius: 10, padding: 3, marginBottom: '1.5rem' }}>
-        {[['shipments', '🚢 Поставки'], ['warehouse', '📦 Склад']].map(([key, label]) => (
-          <button key={key} onClick={() => setTab(key)} style={{ flex: 1, justifyContent: 'center', border: 'none', borderRadius: 8, background: tab === key ? '#fff' : 'transparent', color: tab === key ? '#0077B6' : '#555', fontWeight: tab === key ? 600 : 400, padding: '8px 0', boxShadow: tab === key ? '0 2px 8px rgba(0,119,182,0.12)' : 'none' }}>{label}</button>
-        ))}
-      </div>
+<div className="tab-bar">
+<button onClick={() => setTab('shipments')} className={tab === 'shipments' ? 'active' : ''}><IconShip size={16} /> Поставки</button>
+<button onClick={() => setTab('warehouse')} className={tab === 'warehouse' ? 'active' : ''}><IconBox size={16} /> Склад</button>
+</div>
 
       {showProfit && (
 <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'flex-end' }} onClick={() => setShowProfit(false)}>
@@ -767,7 +781,7 @@ return (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
             <div><div style={{ fontSize: 22, fontWeight: 700 }}>Поставки</div><div className="muted" style={{ fontSize: 13, marginTop: 2 }}>Китай → Россия</div></div>
             <div style={{ display: 'flex', gap: 8 }}>
-<button onClick={refreshData} style={{ padding: '8px 12px', fontSize: 18, lineHeight: 1 }} title="Обновить">{refreshing ? '⏳' : '↻'}</button>
+<button onClick={refreshData} style={{ padding: '8px 12px', fontSize: 18, lineHeight: 1 }} title="Обновить"><IconRefresh size={17} color={refreshing ? "#48CAE4" : "currentColor"} /></button>
 <button className="primary" onClick={() => setView('new-shipment')}>+ Новая</button>
 </div>
           </div>
@@ -801,7 +815,7 @@ return (
                 return (
                   <div key={s.id} className="card shipment-row" onClick={() => { setSelected(s.id); setView('detail-shipment'); }}
 style={isOverdue ? { borderColor: '#f87171', background: '#fff5f5' } : {}}>
-                    <div style={{ fontSize: 28 }}>📦</div>
+                    <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(0,119,182,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><IconBox size={22} color="#48CAE4" /></div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 3 }}>{s.name}</div>
                       <div className="muted" style={{ fontSize: 12 }}>{s.total_cny ? `¥ ${fmt(s.total_cny)}` : ''}{s.items?.length ? ` · ${s.items.length} поз.` : ''}{daysLeft !== null ? (isOverdue ? <span style={{ color: '#d93636', fontWeight: 600 }}> · ⚠️ Просрочено на {Math.abs(daysLeft)} дн.</span> : ` · ${daysLeft} дн. до прибытия`) : ''}{s.ship_date && !daysLeft ? ` · ${s.ship_date}` : ''}</div>
@@ -832,8 +846,8 @@ style={isOverdue ? { borderColor: '#f87171', background: '#fff5f5' } : {}}>
                 const qtyColor = item.qty === 0 ? '#d93636' : item.qty <= (item.min_qty || 5) ? '#b45309' : '#15803d';
                 return (
                   <div key={item.id} onClick={() => { setSelected(item.id); setView('detail-warehouse'); }}
-                    style={{ background: '#fff', border: '1.5px solid #e0eef8', borderRadius: 12, overflow: 'hidden', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,119,182,0.06)', transition: 'all 0.15s' }}>
-                    {item.photo ? <img src={item.photo} alt={item.name} style={{ width: '100%', height: 130, objectFit: 'cover' }} /> : <div style={{ width: '100%', height: 130, background: '#f0f8ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 36 }}>📦</div>}
+                    className="warehouse-card">
+                    {item.photo ? <img src={item.photo} alt={item.name} style={{ width: '100%', height: 130, objectFit: 'cover' }} /> : <div className="warehouse-card-img"><IconBox size={36} color="rgba(72,202,228,0.6)" /></div>}
                     <div style={{ padding: '10px 12px' }}>
                       <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</div>
                       <div style={{ fontSize: 14, color: qtyColor, fontWeight: 600 }}>{item.qty} {item.unit}</div>
